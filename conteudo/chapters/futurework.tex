@@ -1,0 +1,20 @@
+The plan for the dissertation is to present a detailed description and analysis of the two algorithms discussed in Sections~\ref{colkcenter} and~\ref{kmedout} of this proposal, and to investigate an approximation algorithm for the colorful $k$-median problem. If the investigation leads to interesting results, this would also be presented in the dissertation.
+
+While studying the material presented in Section~\ref{colkcenter}, we have done an implementation of the pseudo $2$-approximation for the colorful $k$-center problem~\cite{JSS2020}.
+This can be found at \url{https://github.com/alvesjg/masters}. We plan to revise and test this implementation, and to report about it in the dissertation. 
+
+Until the end of July, we plan to complete the writing of the remaining proofs of Section~\ref{kmedout}, and to finalize the part of the dissertation that describes the algorithm of 
+Krishnaswamy et al.~\cite{KLS2018} for the $k$-median with outliers. 
+We also plan to implement the pseudo approximation briefly mentioned in~\cite[Sects.~1.4 and~4.1]{KLS2018}. This will also be reported in the dissertation. 
+
+Next, we will address the colorful $k$-median problem with two colors, say red and blue. It seems possible to adapt the pseudo approximation algorithm~\cite{KLS2018} for the $k$-median with outliers to the colorful $k$-median problem. Specifically, we can modify~\eqref{LP-iter} by transforming the client coverage constraint~\eqref{const:iter_m} into two separate constraints, one for each color:
+\begin{itemize}
+   \item $| R \cap D_\text{full}| + \sum_{j \in R \cap D_\text{part}} y(F_j) \ge \rho$; and
+   \item $| B \cap D_\text{full}| + \sum_{j \in B \cap D_\text{part}} y(F_j) \ge \beta$,
+\end{itemize}
+where $R$ is the set of red clients, $\rho$ is the number of red clients to be covered, $B$ is the set of blue clients, and $\beta$ is the number of blue clients to be covered.
+With this modification, it is possible to prove that the basic solutions of the LP have at most four strictly fractional variables. This leads to a pseudo approximation that opens at most $k+3$ facilities. We will investigate the possibility of improving this, by opening less than $k+3$ facilities. 
+
+Ideally, we would like to adapt the method used by~\cite{KLS2018} to close fractional facilities to get a good solution that opens exactly $k$ facilities on the colorful $k$-median problem. However, we already noticed several difficulties that might forbid this to be achievable. When working with four fractional facilities that sum up to $2$, we must integrally open two facilities and completely close the other two. When choosing which facilities to open integrally, we cannot guarantee that both colors will have the necessary amount of covered clients. To handle this, we will analyze the possibility of merging this approach with the methods used in the colorful $k$-center paper~\cite{JSS2020}. If we could use a preprocessing step to guarantee a surplus of covered clients of a certain color, we might ensure that, at the end, when integrally opening some fractional facilities and closing others, we would have the flexibility to lose some clients of that same color.
+
+If we realize that it is not possible to advance with the approximation algorithm for the colorful $k$-median using this approach, we intend to study the paper by Gupta \emph{et al.}~\cite{GMZ2021}. This work generalizes the framework developed by Krishnaswamy \emph{et al.}~\cite{KLS2018} for any version of the $k$-median problem with a constant number of additional constraints in its natural LP relaxation. This is exactly the case for the $k$-median with outliers and the colorful $k$-median with a fixed number of colors. We will study this paper and analyze the effects of applying this generalized framework to the colorful $k$-median problem with two colors.

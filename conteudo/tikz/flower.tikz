@@ -1,0 +1,28 @@
+\begin{tikzpicture}
+
+\coordinate (j) at (0,0);
+\coordinate (A) at (0,1);
+\coordinate (B) at (-1,0);
+\coordinate (C) at (1,0);
+\coordinate (D) at (0,-1);
+
+\begin{scope}
+  \fill[violet!50] (j) circle(1);
+  \fill[violet!50] (A) circle(1);
+  \fill[violet!50] (B) circle(1);
+  \fill[violet!50] (C) circle(1);
+  \fill[violet!50] (D) circle(1);
+\end{scope}
+
+\draw (j) circle(1);
+\draw (A) circle(1);
+\draw (B) circle(1);
+\draw (C) circle(1);
+\draw (D) circle(1);
+
+
+\foreach \point in {j,A,B,C,D}
+  \fill (\point) circle (2pt);
+
+\node at (j) [below left=0.5pt] {$j$};
+\end{tikzpicture}

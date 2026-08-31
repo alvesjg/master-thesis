@@ -27,8 +27,8 @@
 % preciso fornecer o resumo nessas duas línguas. LaTeX aceita alguns nomes
 % diferentes para a língua portuguesa; dentre as opções, prefira sempre
 % "brazilian" para português brasileiro e "portuguese" para português europeu.
-%\documentclass[a4paper,12pt,twoside,brazilian,english]{book}
-\documentclass[a4paper,12pt,twoside,english,brazilian]{book}
+%\documentclass[a4paper,12pt,twoside,english,brazilian]{book}
+\documentclass[a4paper,12pt,twoside,brazilian,english]{book}
 
 % O preâmbulo de um documento LaTeX pode ser razoavelmente longo. Neste
 % modelo, optamos por reduzi-lo, colocando praticamente tudo do preâmbulo
@@ -95,28 +95,28 @@
 % em português, essa é a língua do título e "translatedtitle" se refere ao
 % título em inglês; se seu trabalho está escrito em inglês, essa é a língua
 % do título e "translatedtitle" se refere ao título em português.
-\title{Título do trabalho}[um subtítulo]
-\translatedtitle{Title of the document}[a subtitle]
+\title{Clustering with fairness and outliers}
+\translatedtitle{Clustering com fairness e outliers}
 
-\author[fem]{Nome Completo}
+\author{João Guilherme Alves Santos}
 
 \def\profa{Prof\kern.02em.\kern-.07emª\kern.07em}
 \def\dra{Dr\kern-.04em.\kern-.11emª\kern.07em}
 
 % Para TCCs, este comando define o supervisor
-\orientador[fem]{\profa{} \dra{} Fulana de Tal}
+\orientador[fem]{\profa{} \dra{} Cristina Gomes Fernandes}
 
 % Se não houver, remova; se houver mais de um, basta
 % repetir o comando quantas vezes forem necessárias
-\coorientador{Prof. Dr. Ciclano de Tal}
-\coorientador[fem]{\profa{} \dra{} Beltrana de Tal}
+% \coorientador{Prof. Dr. Ciclano de Tal}
+% \coorientador[fem]{\profa{} \dra{} Beltrana de Tal}
 
 \banca{
-  \profa{} \dra{} Fulana de Tal (orientadora) -- IME-USP [sem ponto final],
+  \profa{} \dra{} Cristina Gomes Fernandes -- IME-USP [sem ponto final],
   % Em inglês, não há o "ª"
   %Prof. Dr. Fulana de Tal (advisor) -- IME-USP [sem ponto final],
-  Prof. Dr. Ciclano de Tal -- IME-USP [sem ponto final],
-  \profa{} \dra{} Convidada de Tal -- IMPA [sem ponto final],
+  \profa{} \dra{} Carla Negri Lintzmayer -- UFABC [sem ponto final],
+  Prof. Dr. Lehilton Lelis Chaves Pedrosa -- Unicamp [sem ponto final],
 }
 
 % A página de rosto da versão para depósito (ou seja, a versão final
@@ -129,12 +129,12 @@
   %tcc,
   %definitiva, % É a versão para defesa ou a versão definitiva?
   %quali, % É qualificação?
-  programa={Ciência da Computação},
+  programa={Computer Science},
 }
 
 \defesa{
   local={São Paulo},
-  data=2017-08-10, % YYYY-MM-DD
+  data=2027-07-30, % YYYY-MM-DD
 }
 
 % Se não houve bolsa, remova
@@ -150,17 +150,17 @@
 %      de Aperfeiçoamento\\ de Pessoal de Nível Superior -- Brasil
 %      (CAPES) -- Código de Financiamento 001} % o código é sempre 001
 %
-%\apoio{This study was financed in part by the Coordenação de
+% \apoio{This study was financed in part by the Coordenação de
 %      Aperfeiçoamento\\ de Pessoal de Nível Superior -- Brasil
 %      (CAPES) -- Finance Code 001} % o código é sempre 001
 %
 %\apoio{Durante o desenvolvimento deste trabalho, o autor recebeu\\
 %      auxílio financeiro da FAPESP -- processo nº aaaa/nnnnn-d}
 %
-%\apoio{During the development if this work, the author received\\
-%      financial support from FAPESP -- grant \#aaaa/nnnnn-d}
-\apoio{Durante o desenvolvimento deste trabalho o autor
-       recebeu auxílio financeiro da XXXX}
+\apoio{During the development of this work, the author received\\
+     financial support from FAPESP -- grant \#2025/04638-7}
+% \apoio{Durante o desenvolvimento deste trabalho o autor
+%        recebeu auxílio financeiro da XXXX}
 
 % A licença do seu trabalho. Use CC-BY, CC-BY-NC, CC-BY-ND, CC-BY-SA,
 % CC-BY-NC-SA ou CC-BY-NC-ND para escolher a licença Creative Commons
@@ -183,15 +183,15 @@
 %
 \direitos{CC-BY}
 
-\fichacatalografica{
+% \fichacatalografica{
 
-\noindent Para gerar a ficha catalográfica, acesse \url{https://fc.ime.usp.br},
-          preencha o formulário e escolha a opção ``Gerar Código \LaTeX''.
-          Basta copiar e colar o resultado dentro do comando \Verb
-          |\fichacatalografica| (substituindo este texto explicativo).
-          \vspace{5\baselineskip}
+% \noindent Para gerar a ficha catalográfica, acesse \url{https://fc.ime.usp.br},
+%           preencha o formulário e escolha a opção ``Gerar Código \LaTeX''.
+%           Basta copiar e colar o resultado dentro do comando \Verb
+%           |\fichacatalografica| (substituindo este texto explicativo).
+%           \vspace{5\baselineskip}
 
-}
+% }
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -270,26 +270,26 @@ texto texto texto texto. Texto opcional.
 %%%%% Listas criadas manualmente
 
 %\chapter*{Lista de abreviaturas}
-\disablenewpage{\chapter*{Lista de abreviaturas}}
+% \disablenewpage{\chapter*{Lista de abreviaturas}}
 
-\begin{tabular}{rl}
-   CFT & Transformada contínua de Fourier (\emph{Continuous Fourier Transform})\\
-   DFT & Transformada discreta de Fourier (\emph{Discrete Fourier Transform})\\
-  EIIP & Potencial de interação elétron-íon (\emph{Electron-Ion Interaction Potentials})\\
-  ABNT & Associação Brasileira de Normas Técnicas\\
-   URL & Localizador Uniforme de Recursos (\emph{Uniform Resource Locator})\\
-   IME & Instituto de Matemática, Estatística e Ciência da Computação\\
-   USP & Universidade de São Paulo
-\end{tabular}
+% \begin{tabular}{rl}
+%    CFT & Transformada contínua de Fourier (\emph{Continuous Fourier Transform})\\
+%    DFT & Transformada discreta de Fourier (\emph{Discrete Fourier Transform})\\
+%   EIIP & Potencial de interação elétron-íon (\emph{Electron-Ion Interaction Potentials})\\
+%   ABNT & Associação Brasileira de Normas Técnicas\\
+%    URL & Localizador Uniforme de Recursos (\emph{Uniform Resource Locator})\\
+%    IME & Instituto de Matemática, Estatística e Ciência da Computação\\
+%    USP & Universidade de São Paulo
+% \end{tabular}
 
-%\chapter*{Lista de símbolos}
-\disablenewpage{\chapter*{Lista de símbolos}}
+% %\chapter*{Lista de símbolos}
+% \disablenewpage{\chapter*{Lista de símbolos}}
 
-\begin{tabular}{rl}
-  $\omega$ & Frequência angular\\
-    $\psi$ & Função de análise \emph{wavelet}\\
-    $\Psi$ & Transformada de Fourier de $\psi$\\
-\end{tabular}
+% \begin{tabular}{rl}
+%   $\omega$ & Frequência angular\\
+%     $\psi$ & Função de análise \emph{wavelet}\\
+%     $\Psi$ & Transformada de Fourier de $\psi$\\
+% \end{tabular}
 
 % Quebra de página manual
 \clearpage
@@ -349,7 +349,7 @@ texto texto texto texto. Texto opcional.
 
 % A introdução não tem número de capítulo, então os cabeçalhos também não
 \pagestyle{unnumberedchapter}
-\input{conteudo/00-exemplo-introducao}
+\input{conteudo/chapters/intro}
 \pagestyle{mainmatter}
 \input{conteudo/01-exemplo-normas-ime}
 \input{conteudo/02-exemplo-usando-o-modelo}
@@ -383,35 +383,35 @@ texto texto texto texto. Texto opcional.
 
 %%%% Apêndices %%%%
 
-\cleardoublepage
+% \cleardoublepage
 
-\pagestyle{appendix}
+% \pagestyle{appendix}
 
-\appendix
+% \appendix
 
 % \addappheadtotoc acrescenta a palavra "Apêndice" ao sumário; se
 % só há apêndices, sem anexos, provavelmente não é necessário.
-\addappheadtotoc
+% \addappheadtotoc
 
-\input{conteudo/apendice-exemplo-faq}
-\par
+% \input{conteudo/apendice-exemplo-faq}
+% \par
 
-%%%% Anexos %%%%
+% %%%% Anexos %%%%
 
-\cleardoublepage
+% \cleardoublepage
 
-\pagestyle{appendix} % repete o anterior, caso você não use apêndices
+% \pagestyle{appendix} % repete o anterior, caso você não use apêndices
 
-\annex
+% \annex
 
-% \addappheadtotoc acrescenta a palavra "Anexo" ao sumário; se
-% só há anexos, sem apêndices, provavelmente não é necessário.
-\addappheadtotoc
+% % \addappheadtotoc acrescenta a palavra "Anexo" ao sumário; se
+% % só há anexos, sem apêndices, provavelmente não é necessário.
+% \addappheadtotoc
 
-\input{conteudo/anexo-exemplo-imegoodies}
-\par
-\input{conteudo/anexo-exemplo-pseudocodigo}
-\par
+% \input{conteudo/anexo-exemplo-imegoodies}
+% \par
+% \input{conteudo/anexo-exemplo-pseudocodigo}
+% \par
 
 
 %%%%%%%%%%%%%%% SEÇÕES FINAIS (BIBLIOGRAFIA E ÍNDICE REMISSIVO) %%%%%%%%%%%%%%%%

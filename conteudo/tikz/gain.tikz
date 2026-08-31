@@ -1,0 +1,29 @@
+\begin{tikzpicture}
+
+\coordinate (q) at (0,0);
+\coordinate (p) at (0,1);
+\coordinate (B) at (-1,0);
+\coordinate (C) at (1,0);
+\coordinate (D) at (0,-1);
+
+\begin{scope}
+  \fill[red!50] (q) circle(1);
+  \fill[red!50] (B) circle(1);
+  \fill[red!50] (C) circle(1);
+  \fill[red!50] (D) circle(1);
+  \fill[white] (p) circle(1);
+\end{scope}
+
+\draw (j) circle(1);
+\draw (A) circle(1);
+\draw (B) circle(1);
+\draw (C) circle(1);
+\draw (D) circle(1);
+
+
+\foreach \point in {j,A,B,C,D}
+  \fill (\point) circle (2pt);
+
+\node at (q) [below left=0.5pt] {$q$};
+\node at (p) [below left=0.5pt] {$p$};
+\end{tikzpicture}

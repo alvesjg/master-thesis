@@ -1,0 +1,48 @@
+\chapter{Introduction}
+\label{cap:introduction}
+\newcommand{\NP}{\mathit{NP}}
+\newcommand{\eps}{\epsilon}
+Clustering is the process of partitioning a given set of objects into groups based on their similarities. 
+This fundamental unsupervised learning task plays a crucial role in a wide range of machine learning applications that impact the lives of millions of people, including image analysis, social network analysis, and pattern recognition. 
+The results of these clustering processes can influence critical decisions in areas such as healthcare, marketing, and education, where groupings may shape opportunities and outcomes.
+Given the significant social impact, ensuring fairness in algorithms for these problems has become a vital priority. 
+This is where the field of \emph{fair clustering} emerges as an important area of study.
+
+Two classical clustering problems play a central role in combinatorial optimization: the $k$-center and the $k$-median problems. 
+Given a point set $D$ (whose elements are called clients), a set of possible locations $F$ (whose elements are called facilities), a distance function $d : (F \cup D) \times (F \cup D) \rightarrow \mathbb{R}_{\geq 0}$ such that $(F\cup D, d)$ forms a \href{https://en.wikipedia.org/wiki/Metric_space}{metric space} and an integer~$k$, both problems ask for a set $S \subseteq F$ of cardinality at most $k$ that minimizes a cost involving the distance of each client to its closest facility in $S$.
+The goal in the $k$-center problem is to minimize the maximum distance between any client and its closest facility in $S$, while, in the $k$-median problem, the goal is to minimize the sum of the distances between each client and its closest facility in $S$.
+In the $k$-center problem, it is traditional to assume that $F=D$, while the general case (where $F$ and~$D$ can be distinct) is the \emph{$k$-supplier problem}.
+
+The requirement of providing service to all clients is some times unrealistic, as it might increase the cost substantially, compared to a solution that addresses well most of the clients. 
+So, one of the well-studied and widely applied variants of these problems is the version where we do not require all clients to be served; in other words, \emph{outliers} are allowed. 
+In these variants, known as the \emph{robust $k$-center} and \emph{robust $k$-median} problems, formulated by~\cite{CharikarKMN2001}, the input is the same as in the standard version, with the addition of an integer $t$ representing the minimum number of clients that must be served. 
+The goal is to output a set $S \subseteq F$ of cardinality at most $k$ and a set $C \subseteq D$ of covered clients with cardinality at least $t$ that minimize the same objective as in the standard versions, but restricted to the set~$C$.  The elements in $D \setminus C$ are the so called outliers.  A significant issue that may arise is that certain groups might be entirely classified as outliers, leading to undesirable solutions.
+
+Driven by the need for fair solutions, \cite{BIPV2019} introduced the \emph{colorful $k$-center} problem, which is a generalization of the robust $k$-center that aims at avoiding such undesirable solutions, ensuring some kind of fairness. This formulation can also be applied to generalize the robust $k$-median problem. 
+In these variants, in addition to the input provided in the standard version, a partition $\{D_1,\ldots, D_c\}$ of~$D$ into $c$ color classes is provided, along with a coverage requirement $t_i$ for each color class~$i$. 
+The goal is to output a set $S \subseteq F$ of cardinality at most $k$ and a set $C \subseteq D$ such that $|C \cap D_i| \geq t_i$ for every color class $i$, minimizing the maximum distance between any client in $C$ and its closest facility in $S$ for the colorful $k$-center, and minimizing the sum of the distances between each client in $C$ and its closest facility in $S$ for the colorful $k$-median.
+If there is only one color class, then the definition matches that of the robust version.
+Using the disparate impact doctrine, as articulated by~\cite{FSMSV2015} following the \href{https://en.wikipedia.org/wiki/Griggs_v._Duke_Power_Co.}{\emph{Griggs v.\ Duke Power Co.}\ US Supreme Court case}, the color classes can be viewed as protected attributes, such as race and gender. 
+With the colorful version of these problems, we ensure that no protected class is underrepresented in the solutions produced by decision-making algorithms.
+
+
+So all of these problems are of great interest in practice. However, they are all known to be $\NP$-hard, which means that there are no polynomial-time algorithms for them in general unless $P=\NP$.  One possible approach to tackle such hard problems is the use of approximation algorithms for them.  These are algorithms that produce solutions that might not be of minimum cost, but that are proven to have a cost that is not so far from this minimum. 
+
+A lot of work has been done with approximation algorithms for the standard version of the two clustering problems we are considering.
+For the $k$-center problem, \cite{G1985} and, independently, \cite{HS1985} gave 2-approximation algorithms for the problem, while \cite{HN1979} proved that an approximation algorithm with a better ratio exists only if $P=\NP$. 
+For the $k$-median problem, the best approximation algorithm known is a very recent $(2 + \eps)$-approximation by~\cite{CGLS2025}, while~\cite{JMS2002} showed that it is $\NP$-hard to approximate the problem with a ratio better than $1.763$.
+
+For the version of the $k$-center that allows outliers, that is, the robust ${k\text{-center}}$,~\cite{CGK2020} designed a 2-approximation. 
+Since this variant is a generalization of the $k$-center problem, unless $P = \NP$, there is no approximation algorithm with ratio better than~2. 
+For the $k$-median with outliers, the best known approximation algorithm is a $(6.994 + \eps)$-approximation designed by~\cite{GMZ2021}.
+\cite{CHXXZ2024} developed a fixed-parameter tractable algorithm that produces a solution of cost at most $3 + \eps$ times the minimum cost. Its running time is polynomial on the size of $D$ and $F$ but is exponential on $k$.
+
+For the colorful $k$-center, there is an algorithm that nearly matches the tight approximation guarantee of 2. \cite{JSS2020} designed a 3-approximation algorithm for this problem, which takes polynomial time as long as the numbers of colors is constant.
+For the colorful $k$-median problem, there is a fixed-parameter tractable algorithm in $k$ and $m$, where $m$ is the total number of outliers among all colors, which is a $(1 + \frac{2}{e} + \eps)$-approximation by~\cite{AISX2024}. The approach used reduces a colorful $k$-median instance into multiple instances of the standard version of the $k$-median problem (without outliers or colors restrictions).
+
+Due to the importance in ensuring fairness in the decision-making algorithms used nowadays, it is clear that developing good approximation algorithms for these problems has a big practical interest. 
+Furthermore, there is a lot of theoretical interest as well, as the two problems in their standard versions are classical combinatorial optimization problems, with a vast literature on them. Adapting approximation algorithms for these versions to ensure fairness is a challenge from the research perspective that might require new techniques and more sophisticated algorithms, and end up leading to improvements for several other variants of clustering problems. 
+
+The existing results in the literature show that these problems have recently received significant attention and these results have been published in prestigious conferences and journals. This attests to the quality of these works and also justifies their study.
+
+% In this qualifying proposal, we present two important algorithms for the colorful $k$-center and the $k$-median with outliers problems. In Section~\ref{colkcenter}, we present the results of the $3$-approximation for the colorful $k$-center problem due to Jia, Sheth and Svensson~\cite{JSS2020}, which also includes a pseudo $2$-approximation for the same problem, due to Bandyapadhyay, Inamdar, Pai, and Varadarajan~\cite{BIPV2019}. In Section~\ref{kmedout}, we present the results of a $7.081(1+\eps)$-approximation for the $k$-median with outliers problem due to Krishnaswamy, Li and Sandeep~\cite{KLS2018}. Some proofs in Section~\ref{kmedout} have been omitted, but will be completed for the dissertation text. In Section~\ref{futurework}, we present our expected future work. This includes analyzing the possibility of an approximation for the colorful $k$-median problem. It is not hard to extend the ideas of~\cite{KLS2018} to find a pseudo approximation for the colorful $k$-median. However, we will investigate the possibility of merging the ideas from~\cite{JSS2020} and~\cite{KLS2018} to design an approximation to the same problem.
