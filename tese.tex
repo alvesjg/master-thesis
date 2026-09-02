@@ -47,7 +47,20 @@
 % e fazer modificações nessa package. Com a opção "thesis", imelooks
 % também define os comandos para capa, folha de rosto etc.
 \usepackage{imegoodies}
-\usepackage[thesis]{imelooks}
+\usepackage[thesis, bibstyle=numeric]{imelooks}
+% \usepackage[thesis]{imelooks}
+
+% Correção para um bug conhecido de titlesec + hyperref: sem isto, o
+% destino/marcador de PDF de um título de seção pode ser "roubado" pela
+% última equação numerada anterior (gera avisos de "destination with the
+% same identifier"), fazendo o link do sumário/marcadores apontar quase,
+% mas não exatamente, para o título certo.
+% https://tex.stackexchange.com/questions/97873
+\makeatletter
+\pretocmd{\ttlh@hang}{\phantomsection}{}{}
+\pretocmd{\ttlh@display}{\phantomsection}{}{}
+\pretocmd{\ttlh@runin}{\phantomsection}{}{}
+\makeatother
 
 %\nocolorlinks % para impressão em P&B
 
@@ -65,6 +78,36 @@
 % \texten{blah} -> o texto "blah" é em inglês
 % \textbr{blah} -> o texto "blah" é em português
 \babeltags{br = brazilian, en = english}
+
+% Ambientes de teorema/lema/definição/etc usados nos capítulos. amsthm e
+% thmtools já são carregados por imegoodies; aqui apenas declaramos os
+% ambientes que faltam (veja conteudo/05-exemplo-exemplos.tex para mais
+% exemplos de como criar/personalizar esses ambientes).
+\declaretheorem[numberwithin=chapter]{theorem}
+\declaretheorem[sibling=theorem]{lemma}
+\declaretheorem[sibling=theorem]{corollary}
+\declaretheorem[sibling=theorem, style=definition]{definition}
+\declaretheorem[sibling=theorem, style=definition]{problem}
+\declaretheorem[sibling=theorem, style=remark]{claim}
+
+% Macros matemáticas usadas nos capítulos (amssymb/amsmath/mathtools já são
+% carregados por imegoodies)
+\newcommand{\set}[1]{\left\{#1\right\}} % notação de conjunto: $\set{a,b,c}$
+\newcommand{\real}{\mathbb{R}} % números reais: $\real_{\geq 0}$
+\DeclareMathOperator{\OPT}{OPT} % valor ótimo: $\alpha\,\OPT$
+\newcommand{\cball}{\mathcal{B}} % bola fechada: $\cball(p,r)$
+
+% Pseudocódigo (ambientes algorithm/algorithmic com \State, \While etc);
+% veja os comentários sobre pseudocódigo em imelooks.sty para outras opções
+\usepackage{algorithm}
+\usepackage{algpseudocodex}
+
+% Permite que \input{tikz/arquivo.tikz} nos capítulos (que ficam em
+% conteudo/chapters/) encontre os arquivos em conteudo/tikz/, já que os
+% caminhos de \input são relativos ao diretório de tese.tex
+\makeatletter
+\def\input@path{{conteudo/}}
+\makeatother
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -197,7 +240,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%% AQUI COMEÇA O CONTEÚDO DE FATO %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \begin{document}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% CAPA E PÁGINAS INICIAIS %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -351,11 +393,12 @@ texto texto texto texto. Texto opcional.
 \pagestyle{unnumberedchapter}
 \input{conteudo/chapters/intro}
 \pagestyle{mainmatter}
-\input{conteudo/01-exemplo-normas-ime}
-\input{conteudo/02-exemplo-usando-o-modelo}
-\input{conteudo/03-exemplo-latex}
-\input{conteudo/04-exemplo-tutorial}
-\input{conteudo/05-exemplo-exemplos}
+\input{conteudo/chapters/colkcenter.tex}
+% \input{conteudo/01-exemplo-normas-ime}
+% \input{conteudo/02-exemplo-usando-o-modelo}
+% \input{conteudo/03-exemplo-latex}
+% \input{conteudo/04-exemplo-tutorial}
+% \input{conteudo/05-exemplo-exemplos}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% APÊNDICES E ANEXOS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
