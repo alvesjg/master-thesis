@@ -1,35 +1,22 @@
-% ==========================================================================
-% DRAFT / SKELETON. This chapter adapts the $k$-median with outliers
-% algorithm of Krishnaswamy, Li, and Sandeep~\cite{KLS2018}, presented in
-% Section~\ref{kmedout}, to the colorful $k$-median problem with two colors.
-% Several parts are copied almost verbatim from Section~\ref{kmedout} and
-% only lightly adapted; these are marked below. Parts still missing are
-% marked with TODO comments for later completion.
-%
-% NOTATION NOTE: Section~\ref{kmedout} uses $\rho$ for the small sparsity
-% parameter of the preprocessing step, while Section~\ref{colkcenter} uses
-% $\rho$ and $\beta$ for the red/blue coverage requirements. Both usages
-% collide in this chapter, so here the sparsity parameter is renamed to
-% $\sigma$, and $\rho,\beta$ are reserved for the coverage requirements,
-% matching the convention of Section~\ref{colkcenter}.
-% ==========================================================================
+\chapter{Colorful $k$-median}
+\label{cap:colkmed}
 
-This section adapts the $7.081(1+\eps)$-approximation of Krishnaswamy, Li, and Sandeep~\cite{KLS2018} for the $k$-median with outliers problem, presented in Section~\ref{kmedout}, to the \emph{colorful $k$-median} problem with two colors. We follow the notation of Section~\ref{colkcenter} and split the client set into a set $R$ of \emph{red} clients and a set $B$ of \emph{blue} clients, requiring at least $\rho$ red clients and at least $\beta$ blue clients to be covered.
+This section adapts the $7.081(1+\eps)$-approximation of Krishnaswamy, Li, and Sandeep~\cite{KLS2018} for the $k$-median with outliers problem, presented in Chapter~\ref{cap:kmedout}, to the \emph{colorful $k$-median} problem with two colors. We follow the notation of Chapter~\ref{cap:colkcenter} and split the client set into a set $R$ of \emph{red} clients and a set $B$ of \emph{blue} clients, requiring at least $\rho$ red clients and at least $\beta$ blue clients to be covered.
 
 \begin{problem}[Colorful $k$-median]
 Given a metric space $(F \cup D, d)$, where $F$ is a set of facility locations, $D = R \cup B$ is a set of clients partitioned into a set $R$ of red clients and a set $B$ of blue clients, and $d : (D \cup F) \times (D \cup F) \to \mathbb{R}_+$ is a metric, an integer $k$ representing the number of facility locations that can be opened, and integers $\rho$ and $\beta$ representing the coverage requirements for the red and blue clients respectively, the goal is to find a set $S \subseteq F$ and a set $C \subseteq D$ such that $|S| \le k$, $|C \cap R| \geq \rho$, and $|C \cap B| \geq \beta$, and $S$ and $C$ minimize $\sum_{j \in C} d(j,S)$.
-As before, we assume there are no colocated facilities, but clients may be colocated with each other or with a facility.
+We assume there are no colocated facilities, but clients may be colocated with each other or with a facility.
 \end{problem}
 
-As in Section~\ref{kmedout}, the algorithm works with instances that carry a set of pre-opened facilities.
+The algorithms follow the same process as the one of the Chapter~\ref{cap:kmedout}. Then, we define the notion of \emph{colorful extended instances} for colorful $k$-median instances.
 
 \begin{definition}
-A \emph{colorful extended instance} of the colorful $k$-median problem is denoted by a tuple $(F, R, B, d, k, \rho, \beta, S_0)$, where $(F,R,B,d,k,\rho,\beta)$ is an instance of the colorful $k$-median problem and $S_0 \subseteq F$ is a set of pre-opened facilities. A feasible solution for a colorful extended instance is a pair $(S,C)$, where $S \subseteq F$ is a set of facilities such that $|S| \leq k$ and $S_0 \subseteq S$, and $C \subseteq D = R \cup B$ is a set of clients such that $|C \cap R| \geq \rho$ and $|C \cap B| \geq \beta$.
+A \emph{colorful extended instance} of the colorful $k$-median problem is denoted by a tuple $(F, R, B, d, k, \rho, \beta, S_0)$, where $(F,R,B,d,k,\rho,\beta)$ is an instance of the colorful $k$-median problem and $S_0 \subseteq F$ is a set of pre-opened facilities. A feasible solution for a colorful extended instance is a pair $(S,C)$, where $S \subseteq F$ is a set of facilities such that $|S| \leq k$ and $S_0 \subseteq S$, and $C \subseteq R \cup B$ is a set of clients such that $|C \cap R| \geq \rho$ and $|C \cap B| \geq \beta$.
 \end{definition}
 
 \subsection{The natural LP and integrality gaps}
 
-The natural LP relaxation of the colorful $k$-median problem is obtained from~\eqref{LP-basic} by replacing the single coverage constraint with two constraints, one for each color:
+The natural LP relaxation of the colorful $k$-median problem is obtained from~\ref{LP-basic} by replacing the single coverage constraint with two constraints, one for each color:
 \begin{equation}\tag{$\text{LP}_{\text{basic}}'$} \label{LP-basic-col}
 \begin{aligned}
 \text{Minimize} \quad &\sum_{i \in F} \sum_{j \in D} x_{ij} \,d(i,j) \\
@@ -43,11 +30,11 @@ The natural LP relaxation of the colorful $k$-median problem is obtained from~\e
 \end{aligned}
 \end{equation}
 
-The two gap examples of Section~\ref{kmedout} (Figure~\ref{fig:gap_examples}) do not use the coverage constraint in any way that depends on colors: both instances can be reproduced with a single color, or with the outlier clients of either example arbitrarily colored, without changing the argument. Hence the same unbounded integrality gap arises here, for the same two reasons (the cost of increasing a fractional facility to $1$, and the cost of decreasing a fractional facility to $0$), and the same three preprocessing ideas of Section~\ref{kmedout} are needed: bounding the star cost, bounding the backup cost, and sparsification.
+The two gap examples of Chapter~\ref{cap:kmedout} (Figure~\ref{fig:gap_examples}) do not use the coverage constraint in any way that depends on colors: both instances can be reproduced with a single color without changing the argument. Hence the same unbounded integrality gap arises here, for the same two reasons (the cost of increasing a fractional facility to $1$, and the cost of decreasing a fractional facility to $0$), and the same three preprocessing ideas of Chapter~\ref{cap:kmedout} are needed: bounding the star cost, bounding the backup cost, and sparsification.
 
 \subsection{Preprocessing the instance}
 
-Since the preprocessing ideas only bound connection costs, and never reference the coverage requirement or the color of a client, the notion of sparse instances and the preprocessing machinery of Section~\ref{kmedout} extend to the colorful setting essentially unchanged; only the bookkeeping of how many red and blue clients are covered needs to be carried along. We restate the relevant definitions and theorems below, renaming the sparsity parameter from $\rho$ to $\sigma$ to avoid clashing with the red-coverage requirement $\rho$.
+Since the preprocessing ideas only bound connection costs, and never reference the coverage requirement or the color of a client, the notion of sparse instances and the preprocessing machinery of Chapter~\ref{cap:kmedout} extend to the colorful setting essentially unchanged; only the bookkeeping of how many red and blue clients are covered needs to be carried along. We restate the relevant definitions and theorems below, renaming the sparsity parameter from $\rho$ to $\sigma$ to avoid clashing with the red-coverage requirement $\rho$.
 
 \begin{definition}[Sparse Colorful Extended Instances]
     \label{def:sparse_extended_instances_col}
