@@ -7,16 +7,17 @@ Its definition is recalled, and then a 3-approximation due to Jia, Sheth, and Sv
 Given a metric space $(P,d)$, where $P$ is a point set partitioned into $c$ color classes $\set{P_1,\ldots,P_c}$ and $d : P \times P \to \mathbb{R}_+$ is a metric, a vector of coverage requirements $t \in \mathbb{Z}^c$, and an integer $k$,
 the goal of the \emph{colorful $k$-center} problem is to find a set $S \subseteq P$ of size at most $k$ and a set $C \subseteq P$ such that $|C \cap P_i| \geq t_i$ for each $i \in [c]$, and $S$ and $C$ minimize $\max_{j \in C} d(j,S)$.
 \end{problem}
-Equivalently, the goal is to find the smallest radius $\rho$ such that one can choose $k$ points in $P$ and place $k$ balls of radius $\rho$ around them to satisfy the coverage requirement for every color class. For a metric $(P,d)$ and for each $p \in P$ and $r \in \mathbb{R}_{\geq 0}$, we define the set $\mathcal{B}_P(p,r) \coloneqq \set{j \in P : d(j,p) \leq r}$ as the \emph{ball} of radius $r$ centered at $p$. If the set $P$ is clear from the context, it may be omitted from the subscript. For convenience, we define $\mathcal{B}(p) \coloneqq \mathcal{B}(p,1)$ for each $p \in P$.
+Equivalently, the goal is to find the smallest radius $r^*$ such that one can choose $k$ points in $P$ and place $k$ balls of radius $r^*$ around them to satisfy the coverage requirement for every color class. For a metric $(P,d)$ and for each $p \in P$ and $r \in \mathbb{R}_{\geq 0}$, we define the set $\mathcal{B}_P(p,r) \coloneqq \set{j \in P : d(j,p) \leq r}$ as the \emph{ball} of radius $r$ centered at $p$. If the set $P$ is clear from the context, it may be omitted from the subscript. For convenience, we define $\mathcal{B}(p) \coloneqq \mathcal{B}(p,1)$ for each $p \in P$.
 
-Lately, we will focus our attention on the two color case. Before we will see that, assuming $P \neq \NP$, it is impossible to find an approximation algorithm for the problem if the number of colors is arbitrary. We are going to reduce the set cover problem into a real line instance of the colorful $k$-center problem and show that, if an approximation algorithm for this problem exists, we can answer the set cover instance in polynomial time.
+Lately, we will focus our attention on the two color case. Before we will see that, assuming $\mathit{P} \neq \NP$, it is impossible to find an approximation algorithm for the problem if the number of colors is arbitrary. We are going to reduce the set cover problem into a real line instance of the colorful $k$-center problem and show that, if an approximation algorithm for this problem exists, we can answer the set cover instance in polynomial time.
 
 \begin{theorem}
-    Assuming $\text{P} \neq \text{NP}$, the colorful $k$-center problem with an unbounded number of colors cannot be approximated to within any constant factor in polynomial time.
+    Assuming $\mathit{P} \neq \NP$, the colorful $k$-center problem with an unbounded number of colors cannot be approximated to within any constant factor in polynomial time.
 \end{theorem}
 
 \begin{proof}
-    Let $U$ be a finite set, $\mathcal{S} \subseteq 2^U$ be a family of subsets of $U$ and let $k \in \mathbb{Z}_{\ge 0}$. The Set Cover problem asks to decide wheter there exists a subset $\mathcal{S}' \subseteq \mathcal{S}$ such that $|\mathcal{S}'| \le k$ and $\bigcup_{S \in \mathcal{S}'} S = U$. \red{eu deveria colocar essa definição fora do proof environment?} Set $c \coloneqq |U|$ and $s \coloneqq |\mathcal{S}|$. Let $U = \set{u_1,\ldots, u_c}$ and $\mathcal{S} = \set{S_1,\ldots,S_s}$. Each point of $U$ will be represented as a color in the colorful $k$-center instance with a coverage requirement of 1. For each $i \in [s]$, we create a set of points placed in the position $i$ of the real line. The place one point for each element of $S_i$ with it respective color. 
+    Let $U$ be a finite set, $\mathcal{S} \subseteq 2^U$ be a family of subsets of $U$ and let $k \in \mathbb{Z}_{\ge 0}$. The Set Cover problem asks to decide wheter there exists a subset $\mathcal{S}' \subseteq \mathcal{S}$ such that $|\mathcal{S}'| \le k$ and $\bigcup_{S \in \mathcal{S}'} S = U$. \red{eu deveria colocar essa definição fora do proof environment?} Set $c \coloneqq |U|$ and $s \coloneqq |\mathcal{S}|$. Let $U = \set{u_1,\ldots, u_c}$ and $\mathcal{S} = \set{S_1,\ldots,S_s}$. Each point of $U$ will be represented as a color in the colorful $k$-center instance with a coverage requirement of 1. We will create a instance of the colorful $k$-center with $c$ colors and $\sum_{i = 1}^s |S_i|$ points. For each $i \in [s]$, we create a set of points placed in the position $i$ of the real line. For each element of $S_i$, we place one point with the color that represents such element in the position $i$. Note that, after doing that with each point of $S_i$, this is equivalent to have one point with multiple colors. Look at the example in Figure~\ref{fig:reduction-set-cover-colorful}.
+    \input{conteudo/tikz/hardnesscolkcenter.tex}
 \end{proof}
 
 From now on, the attention is restricted to the two-color case, defining
@@ -31,11 +32,11 @@ Without loss of generality, it is assumed that the problem instances are normali
 This is justified by the observation that the optimal radius must belong to the set of $O(n^2)$ pairwise distances between points in $P$. 
 By iterating over these $O(n^2)$ candidate distances and scaling the instance accordingly, it is guaranteed that at least one such instance satisfies this normalization.
 
-\red{Isso tem que ir para um capítulo de preliminares.} A pseudo $\alpha$-approximation for the colorful $k$-center problem is a polynomial-time algorithm that, given an instance $(R,B,\rho,\beta,d,k)$, finds sets $S$ and $C$ of points such that $|S| \leq k + O(1)$, $|C \cap R| \geq \rho$, $|C\cap B| \geq \beta$, and $\max_{j\in C}d(j,S) \leq \alpha \,\OPT$, where $\OPT$ is the optimal value for the instance. That is, the algorithm finds a solution that satisfies the coverage constraints and has a bounded value compared to the optimal one, but relaxes the constraint on the number of open centers. First, a pseudo 2-approximation algorithm for the colorful \(k\)-center problem, due to Bandyapadhyay, Inamdar, Pai, and Varadarajan~\cite{BIPV2019} is presented, which will be used as a subroutine in the JSS approximation.
+\red{Isso tem que ir para um capítulo de preliminares.} A pseudo $\alpha$-approximation for the colorful $k$-center problem is a polynomial-time algorithm that, given an instance $I = (R,B,\rho,\beta,d,k)$, finds sets $S$ and $C$ of points such that $|S| \leq k + O(1)$, $|C \cap R| \geq \rho$, $|C\cap B| \geq \beta$, and $\max_{j\in C}d(j,S) \leq \alpha \,\opt{I}$, where $\opt{I}$ is the optimal value for the instance. That is, the algorithm finds a solution that satisfies the coverage constraints and has a bounded value compared to the optimal one, but relaxes the constraint on the number of open centers. First, a pseudo 2-approximation algorithm for the colorful \(k\)-center problem, due to Bandyapadhyay, Inamdar, Pai, and Varadarajan~\cite{BIPV2019} is presented, which will be used as a subroutine in the JSS approximation.
 
 \subsection{Pseudo approximation for the colorful $k$-center}
 
-The pseudo approximation presented here is due to Bandyapadhyay \emph{et al.}~\cite{BIPV2019}, but has a simple modification due to Jain \emph{et al.}~\cite{JSS2020}, which will be presented here.
+The pseudo approximation presented here is due to Bandyapadhyay \emph{et al.}~\cite{BIPV2019}, but has a simple modification due to Jia \emph{et al.}~\cite{JSS2020}, which will be presented here.
 
 Let \(I = (R,B,\rho,\beta,d,k)\) be a two-color instance of the colorful $k$-center problem with optimal value~1. 
 The pseudo approximation presented here opens at most $k+1$ clusters with radius at most 2.
@@ -44,7 +45,7 @@ Now, consider the following linear program.
 
 \begin{equation}\tag{LP1} \label{LP1}
 \begin{aligned}
-\sum_{i\in \cball(j)} \; x_i &\ge z_j,
+\sum_{i\in \mathcal{B}(j)} \; x_i &\ge z_j,
   &&\forall\,j\in P,\\
 \sum_{i\in P} x_i &\le k,\\
 \sum_{j\in R} z_j &\ge \rho,\\
@@ -55,13 +56,13 @@ x,z &\in[0,1]^P.
 
 Here, the variable $x_i$ indicates how much the point $i$ is (fractionally) open as a center, while $z_i$ indicates how much the point $i$ is covered by centers in $\mathcal{B}(i)$. 
 Note that the feasible solutions for this program represent fractionally open centers that fractionally cover points located within a unit radius, satisfying the coverage constraints. 
-Since $I$ has optimal value 1, the program is feasible.
+Since $I$ has optimal value~1, the program is feasible.
 
 The pseudo approximation algorithm proceeds in two phases. 
 In the first phase, \ref{LP1} is solved to generate a set of candidate clusters; in the second phase, at most \(k+1\) clusters are selected from these candidates. 
 For the algorithm of the first phase, the following definition is used.
 \begin{definition}
-    For each $j \in P$, the set $\mathcal{F}(j) \coloneqq \bigcup_{i \in \cball(j)}\cball(i)$ is the \emph{flower set} of $j$.
+    For each $j \in P$, the set $\mathcal{F}(j) \coloneqq \bigcup_{i \in \mathcal{B}(j)}\mathcal{B}(i)$ is the \emph{flower set} of $j$.
 \end{definition}
 \begin{figure}[h]
     \centering
@@ -87,7 +88,7 @@ Moreover, vectors $y$ and $\tilde{z}$ are built which will help to prove the qua
         \While{$P' \neq \emptyset$ and $\max_{j \in P'} z_j > 0$}
         \State Let $j \in \arg\max_{\ell \in P'} z_\ell$.
         \State $S \gets S \cup \set{j}$
-        \State $y_j \gets \min\set{1,\sum_{i\in\cball(j)} x_i}$
+        \State $y_j \gets \min\set{1,\sum_{i\in\mathcal{B}(j)} x_i}$
         \State $\tilde{z}_j \gets y_j$
         \State $C_j \gets \mathcal{F}(j)\cap P'$
         \For{all $j' \in C_j\setminus\set{j}$}
@@ -109,13 +110,13 @@ First, this distance is bounded for the points inside one candidate cluster.
 \end{theorem}
 \begin{proof}
     
-By definition of $C_j$, one has $i \in \mathcal{F}(j)$. Thus, there is \(h \in \cball(j)\) such that \(i \in \cball(h)\). Therefore,
+By definition of $C_j$, one has $i \in \mathcal{F}(j)$. Thus, there is \(h \in \mathcal{B}(j)\) such that \(i \in \mathcal{B}(h)\). Therefore,
 \[
 d(i,j)
 \;\le\; d(i,h) + d(h,j)
 \;\le\; 1 + 1 \;=\; 2,
 \]
-where the first inequality holds by the triangle inequality, and the last by the definition of $\cball(j)$ and $\cball(h)$.
+where the first inequality holds by the triangle inequality, and the last by the definition of $\mathcal{B}(j)$ and $\mathcal{B}(h)$.
 \end{proof}
 
 Now it is proved that the candidate clusters meet the coverage requirements. 
@@ -157,7 +158,7 @@ The vector $y$ produced by {\rm Algorithm~\ref{Alg1}} is a feasible solution of~
     Now, observe that, for each $i \in \tilde{C}$ with $i \in C_j$ for some $j \in S$, one has ${\tilde{z}_j = \tilde{z}_i \geq z_i}$. It is evident that this holds if $\tilde{z}_j = 1$, otherwise  
     \begin{equation}
         \label{z-bound}
-    \tilde{z}_j = \sum_{h \in \cball(j)} x_h \geq z_j \geq z_i, 
+    \tilde{z}_j = \sum_{h \in \mathcal{B}(j)} x_h \geq z_j \geq z_i, 
     \end{equation}
     where the first inequality holds because of the first constraint of~\ref{LP1} and the second inequality holds because $i$ was in $P'$ when $j$ was chosen to join $S$ and by the choice of~$j$ in line 4 of~{Algorithm~\ref{Alg1}}.
 
@@ -168,7 +169,7 @@ The vector $y$ produced by {\rm Algorithm~\ref{Alg1}} is a feasible solution of~
     \end{align*}
     where the first equality holds by the definition of $\tilde{z}$, the second equality holds by the definition of $r_j$, the first inequality holds by~\eqref{z-bound}, the third equality holds because, by construction, the $C_j$'s are disjoint and contain all points with positive $z$-values, and the last inequality holds by the third constraint of~\ref{LP1}. Similarly, \(\sum_{j \in S } b_jy_j \geq \beta\). Now, we must prove that \(\sum_{j \in S} y_j \leq k\). Note that
     \begin{align*}
-    \sum_{j \in S} y_j \leq \sum_{j \in S} \sum_{i \in \cball(j)}x_i \leq \sum_{i \in P} x_i \leq k,
+    \sum_{j \in S} y_j \leq \sum_{j \in S} \sum_{i \in \mathcal{B}(j)}x_i \leq \sum_{i \in P} x_i \leq k,
     \end{align*}
     where the first inequality holds by the definition of $y$, the second holds from the claim that the unit balls centered at points in $S$ are disjoint, and the last one holds because $x$ satisfies the second constraint of~\ref{LP1}.
 \end{proof}
@@ -282,8 +283,8 @@ It is easy to see that {Algorithm~\ref{non-separated-algo}} is indeed a 3-approx
     {\rm {Algorithm~\ref{non-separated-algo}}} is a 3-approximation for non-well-separated instances.
 \end{theorem}
 \begin{proof}
-Let $I = (R, B, \rho, \beta, d, k)$ be a non-well-separated instance with optimal value 1. Because the instance is non-well-separated, there exists at least one point $j^* \in R \cup B$ such that $\mathcal{B}(j^*, 3)$ contains at least two unit balls centered at points of some optimal solution OPT for $I$. 
-The algorithm iterates over all points in $R \cup B$. Consider the iteration where $j = j^*$. At this point, $R_{j^*} := R \cap \mathcal{B}(j^*, 3)$ and $B_{j^*} := B \cap \mathcal{B}(j^*, 3)$ are defined. Because $\mathcal{B}(j^*, 3)$ covers at least two unit balls centered at points of $\OPT$, the remaining set $\text{OPT} \setminus \mathcal{B}(j^*, 3)$ has size at most $k - 2$ and the unit balls centered at them cover at least $\rho - |R_{j^*}|$ red points and $\beta - |B_{j^*}|$ blue points from $R \setminus R_{j^*}$ and $B \setminus B_{j^*}$.
+Let $I = (R, B, \rho, \beta, d, k)$ be a non-well-separated instance with optimal value 1. Because the instance is non-well-separated, there exists at least one point $j^* \in R \cup B$ such that $\mathcal{B}(j^*, 3)$ contains at least two unit balls centered at points of some optimal solution $\OPT$ for $I$. 
+The algorithm iterates over all points in $R \cup B$. Consider the iteration where $j = j^*$. At this point, $R_{j^*} := R \cap \mathcal{B}(j^*, 3)$ and $B_{j^*} := B \cap \mathcal{B}(j^*, 3)$ are defined. Because $\mathcal{B}(j^*, 3)$ covers at least two unit balls centered at points of $\OPT$, the remaining set $\OPT \setminus \mathcal{B}(j^*, 3)$ has size at most $k - 2$ and the unit balls centered at them cover at least $\rho - |R_{j^*}|$ red points and $\beta - |B_{j^*}|$ blue points from $R \setminus R_{j^*}$ and $B \setminus B_{j^*}$.
 Therefore, the optimal value of the instance $(R \setminus R_{j^*}, B \setminus B_{j^*}, \rho - |R_{j^*}|, \beta - |B_{j^*}|, d, k - 2)$ is also bounded by 1, which implies that~\ref{LP1} on them is feasible. As guaranteed by Theorem~\ref{pseudo_guarantee}, the BIPV algorithm will successfully return a pseudo solution $(S, C)$.
 Thus, the algorithm is guaranteed to return a solution $(S', C')$ at some iteration (either at $j = j^*$ or earlier). Let $(S, C)$ be the solution returned by BIPV in that iteration. Setting $S' := S \cup \{j\}$ and $C' := C \cup \mathcal{B}(j, 3)$, one has by Theorem~\ref{pseudo_guarantee}:
 \begin{enumerate}
@@ -363,7 +364,7 @@ The idea here is to divide the set $P_4$ in a sparse set $P_s$ and a dense set $
 |\mathcal{F}(p) \cap R \cap P_s| = |(\mathcal{F}(p) \setminus \mathcal{B}(p) ) \cap R \cap P_s | + |\mathcal{B}(p) \cap R \cap P_s| \leq \tau + 2\tau = 3\tau,
 \end{equation}
 where $|(\mathcal{F}(p) \setminus \mathcal{B}(p) ) \cap R \cap P_s | \leq |\mathrm{Gain}(p,p) \cap P_s| \leq \tau$ by~\eqref{eq:tau}.
-This just holds for points that are in OPT, and we do not have them. 
+This just holds for points that are in $\OPT$, and we do not have them. 
 But it will be shown that, for $P_s$, some constraints can be added in~\ref{LP1} so that, for each candidate cluster center $j$, it holds that $|\mathcal{F}(j) \cap R \cap P_s| \leq 3\tau$.
 
 To construct the sparse set $P_s \subseteq P_4$, an iterative removal process is employed. 
@@ -404,18 +405,18 @@ Assuming that those parameters are correctly guessed, it is shown that the point
     There is a polynomial-time algorithm $\mathcal{A}_s$ that finds $k_s$ balls with radius two covering $\beta_s$ blue points and at least $\rho_s - 3\tau$ red points of $P_s$. 
 \end{lemma}
 \begin{proof}
-The algorithm $\mathcal{A}_s$ is now described. By the assumption, there exist $k_s$ unit balls centered at points in $\mathrm{OPT} \cap P_s$ that cover $\beta_s$ blue points and $\rho_s$ red points of $P_s$. Hence, \ref{LP1} has a feasible solution $(x,z)$ for the instance defined by the point set $P_s$, the number of clusters $k_s$, and the covering requirements $\beta_s$ and $\rho_s$.
+The algorithm $\mathcal{A}_s$ is now described. By the assumption, there exist $k_s$ unit balls centered at points in $\OPT \cap P_s$ that cover $\beta_s$ blue points and $\rho_s$ red points of $P_s$. Hence, \ref{LP1} has a feasible solution $(x,z)$ for the instance defined by the point set $P_s$, the number of clusters $k_s$, and the covering requirements $\beta_s$ and $\rho_s$.
 
 By Lemma~\ref{pseudo_to_approx}, there is a polynomial-time algorithm that finds $S \subseteq P_s$ such that $|S| = k_s$ and the flowers centered at points of $S$ cover at least $\beta_s$ blue points and at least $\rho_s - \max_{j \in S} |\mathcal{F}(j) \cap R \cap P_s|$ red points. 
 
 Suppose there is $j \in P_s$ such that $|\mathcal{F}(j) \cap R \cap P_s| > 3\tau$. If the constraint $x_i = 0$ is added for each $i \in \mathcal{B}(j) \cap P_s$, then $0 = \sum_{i \in \mathcal{B}(j) \cap P_s} x_i \geq z_j$. Thus, one must have $z_j = 0$. Since {Algorithm~\ref{Alg1}} only chooses points with positive $z$-values as candidate cluster centers, it follows that $|\mathcal{F}(j) \cap R \cap P_s| \leq 3\tau$ for each $j \in S$.
 
-Let us argue that adding these constraints does not make~\ref{LP1} infeasible. Indeed, the integral solution representing the clusters centered at $\mathrm{OPT} \cap P_s$ remains feasible. This is proved by arguing that, for each $j \in P_s$ such that $|\mathcal{F}(j) \cap R \cap P_s| > 3\tau$, there is no $p \in \mathrm{OPT} \cap P_s$ such that $j \in \mathcal{B}(p)$, which implies $z_j = 0$.
-Suppose, for the sake of contradiction, that there exists $p \in \mathrm{OPT} \cap P_s$ such that $j \in \mathcal{B}(p)$. Note that
+Let us argue that adding these constraints does not make~\ref{LP1} infeasible. Indeed, the integral solution representing the clusters centered at $\OPT \cap P_s$ remains feasible. This is proved by arguing that, for each $j \in P_s$ such that $|\mathcal{F}(j) \cap R \cap P_s| > 3\tau$, there is no $p \in \OPT \cap P_s$ such that $j \in \mathcal{B}(p)$, which implies $z_j = 0$.
+Suppose, for the sake of contradiction, that there exists $p \in \OPT \cap P_s$ such that $j \in \mathcal{B}(p)$. Note that
 \begin{align*}
     3\tau < |\mathcal{F}(j) \cap R \cap P_s| = |\mathrm{Gain}(p,j) \cap P_s| + |\mathcal{B}(p) \cap R \cap P_s| \leq |\mathrm{Gain}(p,j) \cap P_4| + 2\tau,
 \end{align*}
-where the first inequality holds by the choice of $j$, the equality holds by the definition of $\mathrm{Gain}(p,j)$, and the final inequality holds because $p$ is not a dense point. Thus, one has $\tau < |\mathrm{Gain}(p,j) \cap P_4| \leq \tau$ by~\eqref{eq:tau}, a contradiction. Consequently, there is no point of $\mathrm{OPT} \cap P_s$ in $\mathcal{B}(j)$, ensuring $z_j = 0$. Thus, it holds that $\max_{j \in S} |\mathcal{F}(j) \cap R \cap P_s| \leq 3\tau$, and Lemma~\ref{sparse_algo} is proved.
+where the first inequality holds by the choice of $j$, the equality holds by the definition of $\mathrm{Gain}(p,j)$, and the final inequality holds because $p$ is not a dense point. Thus, one has $\tau < |\mathrm{Gain}(p,j) \cap P_4| \leq \tau$ by~\eqref{eq:tau}, a contradiction. Consequently, there is no point of $\OPT \cap P_s$ in $\mathcal{B}(j)$, ensuring $z_j = 0$. Thus, it holds that $\max_{j \in S} |\mathcal{F}(j) \cap R \cap P_s| \leq 3\tau$, and Lemma~\ref{sparse_algo} is proved.
 \end{proof}
 \begin{lemma}[Lemma 4 in~\cite{JSS2020}]
     \label{dense_algo}
