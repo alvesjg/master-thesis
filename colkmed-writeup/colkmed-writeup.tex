@@ -1,0 +1,959 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+\usepackage{amsthm}
+\usepackage{thmtools}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage[inline]{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocodex}
+\usepackage{tikz}
+\usepackage{geometry}
+\geometry{margin=2.7cm}
+
+\declaretheorem[numberwithin=section]{theorem}
+\declaretheorem[sibling=theorem]{lemma}
+\declaretheorem[sibling=theorem]{corollary}
+\declaretheorem[sibling=theorem, style=definition]{definition}
+\declaretheorem[sibling=theorem, style=definition]{problem}
+\declaretheorem[sibling=theorem, style=remark]{claim}
+\declaretheorem[sibling=theorem, style=remark]{remark}
+
+\newcommand{\eps}{\epsilon}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\real}{\mathbb{R}}
+\DeclareMathOperator{\OPT}{OPT}
+
+\title{Colorful $k$-Median}
+\author{João Guilherme Alves Santos}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% \begin{abstract}
+% \noindent
+% This note develops a pseudo-approximation algorithm for the
+% \emph{colorful $k$-median} problem with two colors. The whole algorithm
+% is a direct adaptation of the iterative-rounding framework that
+% Krishnaswamy, Li, and Sandeep~\cite{KLS2018} designed for the
+% (uncolored) $k$-median \emph{with outliers} problem, where a solution is
+% only required to cover $m$ out of $|D|$ clients. Rather than presenting
+% that framework separately and then describing the changes needed, every
+% definition, LP, algorithm, and proof below is written directly for the
+% colorful problem, so that the note is fully self-contained. Wherever a
+% step of the argument turns out not to depend on the color of a client —
+% which, since color only ever enters through the two coverage numbers
+% $\rho$ and $\beta$, is most of the argument — this is stated explicitly
+% immediately before the corresponding definition, LP, or proof, together
+% with a brief remark on why the color-blind argument still applies; no
+% result of~\cite{KLS2018} is otherwise recalled or cited on its own. The
+% two places where color forces a genuinely new argument are worked out in
+% full: the fractional-variable count after iterative rounding, which goes
+% from $2$ to $4$ once a second coverage constraint is added, and the final
+% rounding step, which must choose which fractionally open facility to
+% close so that \emph{both} color requirements survive.
+% \end{abstract}
+
+% \tableofcontents
+
+% \section{Introduction}
+
+% In the \emph{colorful $k$-median} problem with two colors, clients are partitioned into a
+% set $R$ of \emph{red} clients and a set $B$ of \emph{blue} clients, and a
+% solution must open at most $k$ facilities and select a subset of clients
+% covering at least $\rho$ red clients \emph{and} at least $\beta$ blue
+% clients, minimizing the total connection cost of the selected clients;
+% clients that are left uncovered are outliers, exactly as in ordinary
+% $k$-median with outliers, except that now there are two independent
+% coverage targets, one per color, instead of a single target $m$. (Setting
+% $B=\emptyset$, $\beta=0$ recovers the uncolored problem with $m=\rho$.)
+
+The algorithm below is not designed from scratch. It is obtained by
+adapting the iterative-rounding algorithm of
+Krishnaswamy, Li, and Sandeep~\cite{KLS2018} for the $k$-median with outliers problem. 
+We adapt the framework so that we can develop a pseudo-approximation for the colorful $k$-median problem that opens at most $k+1$ facilities, respects the coverage constraints and cost at most $7.081$ times the cost of an optimal solution.
+
+Most of this adaptation is immediate. The steps where the existence of colors impact directly is in the number of strictly fractional variables after the rounding and how to choose a facility to close so that we can guarantee that at most $k + 1$ facilities are opened.
+
+\section{Problem statement and extended instances}
+
+\begin{problem}[Colorful $k$-median]
+Given a metric space $(F \cup D, d)$, where $F$ is a set of facility
+locations, $D = R \cup B$ is a set of clients partitioned into a set $R$
+of red clients and a set $B$ of blue clients, and $d : (D \cup F) \times
+(D \cup F) \to \real_+$ is a metric, an integer $k$ representing the
+number of facility locations that can be opened, and integers $\rho$ and
+$\beta$ representing the coverage requirements for the red and blue
+clients respectively, the goal is to find a set $S \subseteq F$ and a set
+$C \subseteq D$ such that $|S| \le k$, $|C \cap R| \geq \rho$, and $|C
+\cap B| \geq \beta$, and $S$ and $C$ minimize $\sum_{j \in C} d(j,S)$. We
+assume there are no colocated facilities (since facilities have no
+capacities, colocated facilities would be redundant), but clients may be
+colocated with each other or with a facility.
+\end{problem}
+
+The algorithm will need to pre-open a
+bounded number of facilities in a preprocessing step. Because of that the following notion is needed.
+
+\begin{definition}
+A \emph{colorful extended instance} is denoted by a tuple $(F, R, B, d, k, \rho,
+\beta, S_0)$, where $(F,R,B,d,k,\rho,\beta)$ is a colorful $k$-median
+instance and $S_0 \subseteq F$ is a set of \emph{pre-opened} facilities.
+A feasible solution for a colorful extended instance is a pair $(S,C)$,
+where $S \subseteq F$ is a set of facilities with $|S| \leq k$ and $S_0
+\subseteq S$, and $C \subseteq R \cup B$ is a set of clients with $|C
+\cap R| \geq \rho$ and $|C \cap B| \geq \beta$.
+\end{definition}
+
+\section{The natural LP and integrality gaps}
+\label{sec:lp}
+
+The natural LP relaxation of the colorful $k$-median problem has one
+coverage constraint per color:
+\begin{equation}\tag{$\text{LP}_{\text{basic}}$} \label{LP-basic}
+\begin{aligned}
+\text{Minimize} \quad &\sum_{i \in F} \sum_{j \in D} x_{ij} \,d(i,j) \\
+\text{subject to} \quad &\sum_{i \in F} y_i \le k, \\
+&x_{ij} \le y_i, && \forall i \in F, \ j \in D,\\
+&\sum_{i \in F} x_{ij} \le 1, && \forall j \in D,\\
+&\sum_{j \in R} \sum_{i \in F} x_{ij} \ge \rho, \\
+&\sum_{j \in B} \sum_{i \in F} x_{ij} \ge \beta, \\
+&x \in[0,1]^{F\times D}, \quad y \in [0,1]^F.
+\end{aligned}
+\end{equation}
+Here $y_i$ indicates how much facility $i$ is (fractionally) open, and
+$x_{ij}$ how much client $j$ is fractionally served by facility $i$; once
+$y$ is fixed, the best choice of $x$ is a simple greedy allocation.
+
+Note that if all the points are of the same color, we recover the LP formulation of the $k$-median with outliers problem. Since~\cite{KLS2018} proves that the integrality gap of the LP formulation of the $k$-median with outliers problem is unbounded, we also have that~\eqref{LP-basic} has an unbounded integrality gap.
+
+\section{Preprocessing the instance}
+\label{sec:preprocessing}
+
+For $i\in S^*$, let $C_i^*\subseteq C^*$ be the clients of $C^*$ whose
+closest facility of $S^*$ is $i$. Assume that the ties are broken
+arbitrarily, so each $j\in C^*$ lies in exactly one $C_i^*$.
+
+\begin{definition}[Sparse colorful extended instance]
+\label{def:sparse}
+Given a colorful extended instance $I' = (F,R,B,d,k,\rho,\beta,S_0)$,
+parameters $\sigma, \delta \in (0, 1/2)$, and $U \ge 0$. Let $(S^*, C^*)$
+be a feasible solution to $I'$ with cost at most $U$. We say that $I'$
+is $(\sigma, \delta, U)$-sparse w.r.t.\ $(S^*, C^*)$ if:
+\begin{enumerate}[label=\alph*), ref=\thetheorem\alph*]
+\item \label{def:sparse_a} for every $i \in S^* \setminus S_0$, $\sum_{j
+\in C_i^*} d(j, i) \leq \sigma U$;
+\item \label{def:sparse_b} for every $p \in F \cup D$, $|\mathcal{B}(p,
+\delta \cdot d(p, S^*)) \cap C^*| \cdot d(p, S^*) \leq \sigma U$.
+\end{enumerate}
+\end{definition}
+
+\begin{theorem}[Sparsification]
+\label{thm:sparsification}
+Given $I = (F, R, B, d, k, \rho, \beta)$, $\sigma, \delta \in (0, 1/2)$,
+and an upper bound $U$ on the cost of an optimal solution
+$(S^*, C^*)$ to $I$ (which is not given to us), there is an
+$n^{O(1/\sigma)}$-time algorithm that outputs $n^{O(1/\sigma)}$ colorful
+extended instances, one of which, say $I'$, has the form $(F, R'
+\subseteq R, B' \subseteq B, d, k, \rho' = |C^* \cap R'|, \beta' = |C^*
+\cap B'|, S_0 \subseteq S^*)$ and satisfies:
+\begin{enumerate}[label=\alph*), ref=\thetheorem\alph*]
+\item \label{thm:sparsification_a} $I'$ is $(\sigma, \delta, U)$-sparse
+w.r.t.\ $(S^*, C^* \cap (R' \cup B'))$;
+\item \label{thm:sparsification_b} $\frac{1-\delta}{1+\delta} \sum_{j
+\in C^* \setminus (R' \cup B')} d(j, S_0) + \sum_{j \in C^* \cap (R' \cup
+B')} d(j, S^*) \leq U$.
+\end{enumerate}
+\end{theorem}
+
+Property~\ref{thm:sparsification_b} means that the cost of the solution
+$(S^*, C^* \cap (R' \cup B'))$ for the residual sparse instance $I'$
+combined with the approximate cost of reconnecting the excluded clients
+$C^* \setminus (R' \cup B')$ to the pre-opened facilities $S_0$, remains
+upper bounded by $U$.
+
+The idea of the algorithm is that we need to add to $S_0$ a constant number, parametrized
+by $\sigma$, of facilities to ensure~\ref{def:sparse_a} and remove a
+constant number of balls to ensure~\ref{def:sparse_b}. It takes $O(n)$
+to guess one facility to be removed, and $O(n^3)$ to guess a ball, since
+we need to guess the point on which the ball is centered, and to guess
+the radius, we choose one of the $O(n^2)$ distances of the metric. We
+simply brute force every possibility, returning an instance for each of
+them. One of the instances will satisfy the properties of the theorem.
+The proof consists of showing how to obtain the desired instance if we
+know an optimal solution.
+
+\begin{proof}
+First, assume that we know an optimal solution $(S^*,C^*)$ of $I = (F,R,B,d,k,\rho,\beta)$. Also, let $\sigma,\delta$ and $U$
+be parameters as defined in the theorem. Also, for each $i \in S^*$, let
+$C_i^* \subseteq C^*$ be the set of clients of $C^*$ such that $i$ is
+the closest facility of $S^*$. We assume that each $j \in C^*$ is in
+exactly one $C_i^*$, by breaking the ties arbitrarily. We will
+iteratively choose a facility from $S^*$ that violates~\ref{def:sparse_a}
+and add it to $S_0$, until it holds. Then, we will iteratively choose a
+point that violates~\ref{def:sparse_b}, add it to $S_0$ and remove the
+respective ball, until the property holds. We start with $D' \coloneqq R
+\cup B$ and $S_0 \coloneqq \emptyset$ and will stop with a
+$(\sigma,\delta,U)$-sparse w.r.t.\ $(S^*,C^* \cap D')$ instance $I' =
+(F, R' = R\cap D', B' = B \cap D', d, k, \rho' = |C^* \cap R'|, \beta' =
+|C^* \cap B'|, S_0)$.
+
+To guarantee property~\ref{def:sparse_a} we add to $S_0$ the set of
+facilities $i \in S^*$ such that 
+\[\sum_{j \in C_i^*} d(j, i) > \sigma U.\]
+There are at most $1/\sigma$ such facilities. After this, we have
+that 
+\[\sum_{j \in C_i^* \cap D'} d(j,i) \leq \sum_{j \in C_i^*} d(j, i)
+\leq \sigma U.\]
+
+To guarantee property~\ref{def:sparse_b}, while there exists $p \in F
+\cup D$ such that
+\[
+|\mathcal{B}(p, \delta \cdot d(p, S^*)) \cap C^* \cap D'| \cdot d(p,
+S^*) > \sigma U,
+\]
+we add in $S_0$ the facility $i \in S^*$ which is nearest from $p$, and
+update ${D' \gets D' \setminus \mathcal{B}(p, \delta \cdot d(p,S^*))}$.
+By triangle inequality, every client $j$ removed at this step satisfies
+\[d(j,S^*) \ge d(p,S^*) - d(j,p) \ge (1-\delta)\, d(p,S^*),\] and also
+\[
+d(j,S_0) \le d(j,i) \le d(j,p) + d(p,i) \le \delta\, d(p,S^*) +
+d(p,S^*) \le \frac{1+\delta}{1-\delta}\, d(j,S^*).
+\]
+Moreover, since every removed client $j$ satisfies $d(j,S^*) \ge
+(1-\delta)d(p,S^*)$, the total cost contributed by the clients removed
+at this step is at least
+\[
+|\mathcal{B}(p,\delta \cdot d(p,S^*)) \cap C^* \cap D'| \cdot
+(1-\delta)\, d(p,S^*) > (1-\delta)\sigma U,
+\]
+where the last inequality follows from the violated condition. Since
+the total cost of $(S^*,C^*)$ is at most $U$, and each iteration
+removes clients whose combined cost exceeds $(1-\delta)\sigma U$, this
+procedure runs for at most $\frac{1}{\sigma(1-\delta)} = O(1/\sigma)$
+iterations before it terminates. When it stops, we have
+$|\mathcal{B}(p,\delta\cdot d(p,S^*)) \cap C^* \cap D'|\cdot d(p,S^*)
+\le \sigma U$ for every $p\in F\cup D$, so Property~\ref{def:sparse_b}
+holds. Setting $R' \coloneqq R \cap D'$ and $B' \coloneqq B \cap D'$,
+the resulting instance 
+\[I' = (F, R', B', d, k, \rho' = |C^* \cap R'|,
+\beta' = |C^* \cap B'|, S_0)\] 
+is $(\sigma, \delta, U)$-sparse w.r.t.\
+the solution $(S^*,C^*\cap(R'\cup B'))$.
+
+It remains to check Property~\ref{thm:sparsification_b}. Recall $D' =
+R' \cup B'$. Every client $j$ removed from $D'$ during the second
+phase, i.e., every $j \in C^*\setminus D'$, satisfies
+$\frac{1-\delta}{1+\delta}d(j,S_0) \le d(j,S^*)$, by the bound
+established above. Summing this inequality over all such clients and
+adding $\sum_{j\in C^*\cap D'} d(j,S^*)$ to both sides gives
+\[
+\frac{1-\delta}{1+\delta}\sum_{j\in C^*\setminus D'} d(j,S_0) +
+\sum_{j\in C^*\cap D'} d(j,S^*) \le \sum_{j\in C^*\setminus D'} d(j,S^*)
++ \sum_{j\in C^*\cap D'} d(j,S^*) = \sum_{j\in
+C^*} d(j,S^*) \le U,
+\]
+which is exactly Property~\ref{thm:sparsification_b}.
+
+This finishes the construction assuming the optimal solution
+$(S^*,C^*)$ is known. Since we do not have access to it in practice, we
+cannot run this procedure directly. However, as discussed above, the
+construction only ever adds $O(1/\sigma)$ facilities to $S_0$ and
+removes $O(1/\sigma)$ balls of clients from $D'$, and each ball is
+determined by its center $p$ and its radius $\delta \cdot d(p,S^*)$,
+which is one of the $O(n^2)$ pairwise distances of the metric. Thus,
+there are at most $n^{O(1/\sigma)}$ possible instances $(F,R',B',d,k,
+\rho',\beta',S_0)$ that could arise from this procedure. We simply
+enumerate all of them; one of these instances is guaranteed to be the
+one produced by running this procedure that knows an optimal solution
+$(S^*,C^*)$, which satisfies Properties~\ref{thm:sparsification_a}
+and~\ref{thm:sparsification_b}.
+\end{proof}
+
+The concept of sparse instances is utilized to construct the vector $(\mathcal{R}_j)_{j \in D'}$ representing the maximum connection cost for each client. Once these bounds are found, the notion of sparsity is no longer required for the subsequent steps of the algorithm. In the following theorem, we state the properties of the values $\mathcal{R}_j$ that can be efficiently computed, followed by the procedure for their construction.
+
+\begin{theorem}
+\label{thm:radius}
+Let $I' = (F, R', B', d, k, \rho, \beta, S_0)$ be a $(\sigma, \delta,
+U)$-sparse colorful extended instance w.r.t.\ some solution $(S^*, C^*)$
+of cost $U' \le U$, and set $D' \coloneqq R' \cup B'$. We can
+efficiently compute a vector $(\mathcal{R}_j)_{j \in D'} \in \real^{D'}_{\ge 0}$
+such that:
+\begin{enumerate}
+\item for every $t > 0$ and $p \in F \cup D'$,
+\[ \left| \left\{ j \in \mathcal{B} \left( p, \frac{\delta t}{4 + 3\delta}
+\right) \cap D' : \mathcal{R}_j \ge t \right\} \right| \le \frac{\sigma(1 +
+3\delta/4)}{(1 - \delta/4)} \cdot \frac{U}{t}, \]
+\item there is a solution to $I'$ of cost at most $(1+\delta/2)U'$ in
+which every client $j$ connected to a facility $i$ satisfies $d(i,j) \le
+\mathcal{R}_j$, and moreover the total cost of clients connected to any facility
+$i \notin S_0$ in this solution is at most $\sigma(1+\delta/2)U$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+We first build a vector $(\hat{\mathcal{R}}_j)_{j\in D'}$ with
+\begin{equation}
+\label{ineq:Rhat}
+\left| \left\{ j \in \mathcal{B} \left( p, \frac{\delta t}{4} \right)
+\cap D' : \hat{\mathcal{R}}_j \ge t \right\} \right| \le \frac{\sigma}{1 -
+\delta/4} \cdot \frac{U}{t} \qquad \forall\, t>0,\ p\in F\cup D',
+\end{equation}
+by {Algorithm~\ref{alg:construct_R}}: initialize $\hat{\mathcal{R}}_j=0$ for all
+$j$, then process every distinct value $t'\in\{d(i,j): i\in F, j\in D'\}$
+in decreasing order and, for every client $j'$ still at $\hat{\mathcal{R}}_{j'}=0$,
+set $\hat{\mathcal{R}}_{j'}\gets t'$ whenever doing so would not violate
+\eqref{ineq:Rhat} for $t=t'$ at any $p$. Since $\hat{\mathcal{R}}_j=0$ for all $j$
+satisfies \eqref{ineq:Rhat} trivially at the start, and the algorithm
+only ever assigns a value when it keeps \eqref{ineq:Rhat} valid, property
+1 (with the constant $\frac{\delta}{4}$ in place of
+$\frac{\delta}{4+3\delta}$) holds throughout, and in particular at
+termination.
+
+\begin{algorithm}
+\caption{Construct $\hat{\mathcal{R}}$} \label{alg:construct_R}
+\begin{algorithmic}[1]
+    \For{each $j \in D'$}
+    \State $\hat{\mathcal{R}}_j \gets 0$
+    \EndFor
+    \For{each $t' \in \{d(i,j) : i \in F, j \in D'\} \setminus \{0\}$ in decreasing order}
+    \For{each $j' \in D'$ such that $\hat{\mathcal{R}}_{j'} = 0$}
+    \If{ letting $\hat{\mathcal{R}}_{j'} = t'$ does not violate~\eqref{ineq:Rhat} for $t = t'$ and any $p \in F \cup D'$}
+    \State $\hat{\mathcal{R}}_{j'} \gets t'$
+    \EndIf
+    \EndFor
+    \EndFor
+\State \Return $\hat{\mathcal{R}}$
+\end{algorithmic}
+\end{algorithm}
+
+To prove property 2, we exhibit a mapping $f:C^*\to D'$ realizing it. Set
+$f(j)\coloneqq j$ for every $j\in C^*$ initially, and repeat: whenever a
+client $j\in C^*$ has connection cost $c_j^*>(1+3\delta/4)\hat{\mathcal{R}}_j$ (so
+its own radius bound is too small), the sparsity of $I'$ guarantees a
+nearby ball with many clients of large $\hat{\mathcal{R}}$-value; formally there
+exists $f(j)\in D'\setminus f(C^*)$ with $d(f(j),j)\le \delta c_j^*/2$
+and $\hat{\mathcal{R}}_{f(j)}\ge c_j^*$ (this uses only property b) of
+Definition~\ref{def:sparse}, i.e.\ that no ball of clients — regardless
+of color — carries cost above $\sigma U$, together with the maximality
+of $\hat{\mathcal{R}}$ under \eqref{ineq:Rhat}, to find an unused such client). If
+$j$ was connected to $i\in S^*$, connect $f(j)$ to $i$ instead:
+\[
+d(f(j),i) \le d(f(j),j) + d(j,i) \le \tfrac{\delta}{2}c_j^* + c_j^* =
+(1+\delta/2)c_j^*.
+\]
+Setting $\mathcal{R}_j \coloneqq (1+3\delta/4)\hat{\mathcal{R}}_j$ for all $j\in D'$ turns
+$\hat{\mathcal{R}}_{f(j)}\ge c_j^*$ into $d(f(j),i)\le (1+\delta/2)\mathcal{R}_{f(j)}/(1+3\delta/4)
+\le \mathcal{R}_{f(j)}$ up to the stated constants, and gives property 1 in its
+stated form; summing the (at most) $(1+\delta/2)$ cost-inflation factor
+over all reconnected clients gives a solution of cost at most
+$(1+\delta/2)U'$, and the star-cost bound at facilities outside $S_0$
+follows because the reconnection only ever routes each original unit of
+cost through the same facility of $S^*$ it originally used, scaled by at
+most $(1+\delta/2)$.
+
+At no point in either the construction of $\hat{\mathcal{R}}$ or the mapping $f$ is
+the color of a client used; both only compare connection costs, ball
+populations, and distances against thresholds derived from $U$, $\sigma$,
+$\delta$.
+\end{proof}
+
+\section{The iterative rounding framework}
+
+\subsection{The strengthened LP and eliminating the $x$ variables}
+
+With $U$ guessed and $(\mathcal{R}_j)_{j\in D}$ fixed by Theorem~\ref{thm:radius},
+write $\tilde U \coloneqq (1+\delta/2)U$ and $\tilde U' \coloneqq
+(1+\delta/2)U'$, and strengthen \eqref{LP-basic}:
+\begin{align} \tag{$\text{LP}_{\text{strong}}$} \label{LP-strong}
+\text{Minimize} \quad &\sum_{i \in F} \sum_{j \in D} x_{ij} d(i,j) \\
+\text{subject to} \quad &\text{constraints of } \eqref{LP-basic}, \nonumber \\
+& y_i = 1, \quad &&\forall i \in S_0, \nonumber \\
+& x_{ij} = 0, \quad &&\forall i \in F, \ j \in D \text{ s.t. } d(i,j) > \mathcal{R}_j, \nonumber \\
+& \sum_{j \in D} x_{ij} d(i,j) \leq \sigma \tilde{U} y_i, \quad &&\forall i \in F \setminus S_0, \nonumber \\
+& x_{ij} = 0, \quad &&\forall i \in F \setminus S_0, \ j \in D \text{ s.t. } d(i,j) > \sigma \tilde{U}. \nonumber
+\end{align}
+
+\begin{remark}
+None of these four added constraints reference $\rho$, $\beta$, or
+color; they only cap connection distances and star costs by quantities
+derived from $U$. Consequently the near-optimal solution of
+Theorem~\ref{thm:radius} (property 2) is directly feasible for
+\eqref{LP-strong}, giving $\OPT(\text{LP}_{\text{strong}}) \le \tilde
+U'$, exactly as it would for a single coverage number.
+\end{remark}
+
+Once $y$ is fixed, the best $x$ is again a greedy allocation; to remove
+the $x$ variables we split each fractional facility into collocated
+copies, distributing each client's connection among them in
+non-decreasing order of current load.
+
+\begin{lemma}
+\label{lem:eliminate_x}
+By adding collocated facilities to $F$, we can efficiently obtain a
+vector $y^* \in [0,1]^F$ and a set of allowed facilities $F_j \subseteq
+\mathcal{B}(j, \mathcal{R}_j) \cap F$ for every client $j \in D$, satisfying the
+following properties:
+\begin{itemize}
+\item[(a)] For each client $j \in D$, $y^*(F_j) \leq 1$;
+\item[(b)] $y^*(F) \leq k$;
+\item[(c)] $\sum_{j \in R} y^*(F_j) \geq \rho$ and $\sum_{j \in B}
+y^*(F_j) \geq \beta$;
+\item[(d)] $\sum_{j \in D} \sum_{i \in F_j} d(i, j) y^*_i \leq \tilde{U}'$;
+\item[(e)] For each $i \in S_0$, $\sum_{i' \text{ collocated with } i}
+y^*_{i'} = 1$;
+\item[(f)] For every $i$ not collocated with a facility in $S_0$, the
+star cost satisfies $\sum_{j \in D : i \in F_j} d(i, j) y^*_i \leq
+2\sigma\tilde{U}$.
+\end{itemize}
+\end{lemma}
+
+\begin{proof}
+Take an optimal solution $(x,y)$ of \eqref{LP-strong}. For each $i\in F$
+and $j\in D$ with $x_{ij}>0$, distribute the amount $x_{ij}$ among
+collocated copies of $i$ in non-decreasing order of their current star
+cost, splitting a copy into two collocated copies whenever necessary to
+match $x_{ij}$ exactly, and letting $F_j$ consist of every copy that
+receives a positive share of $x_{ij}$. This process exactly preserves the
+fractional assignment of $(x,y)$, so properties (a), (b), (d), (e) hold
+immediately, since they only restate constraints of \eqref{LP-strong}
+that this splitting does not touch (the bound on $y^*(F)$, the connection
+cost, and the full opening of pre-opened facilities). Property (f) is a
+makespan bound: the constraints of \eqref{LP-strong} guarantee that the
+largest single connection (``job'') is at most $\sigma\tilde U$ and that
+the average load per unit of facility (``machine'') is at most
+$\sigma\tilde U$, so greedily packing jobs onto machines in
+non-decreasing load order cannot leave any machine with load exceeding
+the sum of these two bounds, i.e.\ $2\sigma\tilde U$.
+
+None of properties (a),(b),(d),(e),(f) or the construction itself
+references the color of a client — the splitting procedure only ever
+looks at connection amounts $x_{ij}$ and current star costs. Property
+(c), on the other hand, is exactly where color enters: it is inherited
+directly from the two coverage constraints of \eqref{LP-basic} (carried
+into \eqref{LP-strong} unchanged), $\sum_{j\in R}\sum_i x_{ij}\ge\rho$
+and $\sum_{j\in B}\sum_i x_{ij}\ge\beta$, since the splitting preserves
+$\sum_{i\in F_j} y^*_i = \sum_i x_{ij}$ for every $j$.
+\end{proof}
+
+\subsection{Random discretization of distances}
+
+Distances are grouped into randomly offset discrete levels. Let
+$\tau\coloneqq\arg\min_\tau \frac{3\tau-1}{\ln\tau}\approx 2.3603$, giving
+the target approximation constant $\alpha\coloneqq\frac{3\tau-1}{\ln\tau}
+\approx7.081$. Choose $a\in[1,\tau)$ so that $\ln a$ is uniform on
+$[0,\ln\tau)$, set $\Delta_{-2}=-1$, $\Delta_{-1}=0$, and
+$\Delta_\ell\coloneqq a\tau^\ell$ for integers $\ell\ge0$; for $i\in F$,
+$j\in D$, let $d'(i,j)\coloneqq\Delta_\ell$ for the least $\ell$ with
+$d(i,j)\le\Delta_\ell$.
+
+\begin{lemma}
+\label{lem:random_dist}
+For all $i \in F$ and $j \in D$, $d'(i, j) \ge d(i, j)$ and
+$\mathbb{E}_a[d'(i, j)] = \frac{\tau - 1}{\ln \tau} d(i, j)$.
+\end{lemma}
+
+\begin{proof}
+$d'(i,j)\ge d(i,j)$ holds by construction. Writing $x\coloneqq d(i,j)$
+and $\ell_0$ for the integer with $\tau^{\ell_0-1}\le x<\tau^{\ell_0}$,
+one has $d'(i,j)=a\tau^{\ell_0}$ whenever $a\ge x/\tau^{\ell_0-1}\cdot
+\tau^{-1}$, i.e.\ this reduces to a routine computation of $\mathbb
+E_a[a\tau^{\lceil \log_\tau(x/a)\rceil}]$ over $a$ uniform in $\ln$-scale
+on $[1,\tau)$, which evaluates to $\frac{\tau-1}{\ln\tau}x$; this
+computation depends only on $x=d(i,j)$ and $\tau$, never on color.
+\end{proof}
+
+Nothing above — the offset $a$, the levels $\Delta_\ell$, or $d'$ —
+depends on $\rho$, $\beta$, or the color of a client; it is purely a
+function of the metric $d$.
+
+\subsection{The colorful auxiliary LP and the algorithm}
+\label{sec:iter-lp}
+
+The algorithm maintains a partition $D=D_\text{full}\uplus D_\text{part}$
+of \emph{fully-} and \emph{partially-}connected clients, a set of
+allowed facilities $F_j$ for each client, a radius-level $\ell_j$ with
+$\Delta_{\ell_j} = \max_{i\in F_j} d'(i,j)$, an inner ball
+$B_j=\{i\in F_j : d'(i,j)\le\Delta_{\ell_j-1}\}$ for $j\in D_\text{full}$,
+and a set $D^*\supseteq S_0$ of pairwise-disjoint-$F_j$ \emph{anchors}
+(with every facility of $S_0$ included as a virtual client with $F_i$ the
+set of its collocated copies and $\ell_i=-1$). Initially $D_\text{full}=
+\emptyset$, $D_\text{part}=D$, $D^*=S_0$, and $F_j$, $\ell_j$ are as
+given by Lemma~\ref{lem:eliminate_x}. None of these objects — the
+partition, the sets $F_j,B_j$, the levels $\ell_j$, or $D^*$ — depend on
+color; they will be updated only by comparing discretized distances
+$d'$.
+
+At every iteration the algorithm solves:
+\begin{align} \tag{$\text{LP}_{\text{iter}}$} \label{LP-iter}
+\text{Minimize} \quad & \sum_{j \in D_\text{part}} \sum_{i \in F_j} d'(i,j) y_i + \sum_{j \in D_\text{full}} \left( \sum_{i \in B_j} d'(i,j) y_i + (1 - y(B_j)) \Delta_{\ell_j} \right) \\
+\text{subject to} \quad & y(F) \leq k, \label{const:iter_k} \\
+& |D_\text{full} \cap R| + \sum_{j \in D_\text{part} \cap R} y(F_j) \geq \rho, \label{const:iter_rho} \\
+& |D_\text{full} \cap B| + \sum_{j \in D_\text{part} \cap B} y(F_j) \geq \beta, \label{const:iter_beta} \\
+& y(F_j) = 1, \quad \forall j \in D^*, \label{const:iter_Dstar} \\
+& y(B_j) \leq 1, \quad \forall j \in D_\text{full}, \label{const:iter_B_full} \\
+& y(F_j) \leq 1, \quad \forall j \in D_\text{part}, \label{const:iter_F_part} \\
+& y_i \in [0,1], \quad \forall i \in F. \label{const:iter_domain}
+\end{align}
+Here the only place color appears is the coverage constraint, now split
+in two: \eqref{const:iter_rho} requires the number of red clients
+covered (full red clients count for $1$, partial ones for $y(F_j)$) to
+be at least $\rho$, and \eqref{const:iter_beta} does the same for blue
+clients and $\beta$; every other constraint and the objective are
+unchanged from the single-coverage-number case.
+
+\begin{lemma}
+\label{lem:iter_lp_feasible}
+The vector $y^*$ of Lemma~\ref{lem:eliminate_x} is a feasible solution to
+\eqref{LP-iter} (with $D_\text{part}=D$, $D_\text{full}=\emptyset$,
+$D^*=S_0$), and its expected objective value (over the random choice of
+$a$) is at most $\frac{\tau-1}{\ln\tau}\tilde U'$.
+\end{lemma}
+
+\begin{proof}
+Feasibility of \eqref{const:iter_k} and \eqref{const:iter_F_part} is
+properties (b) and (a) of Lemma~\ref{lem:eliminate_x}; feasibility of
+\eqref{const:iter_Dstar} holds because $y^*(F_i)=1$ for virtual clients
+$i\in S_0$ by property (e); feasibility of \eqref{const:iter_rho} and
+\eqref{const:iter_beta} (with $D_\text{full}=\emptyset$) is exactly
+property (c). The initial objective value is $\sum_{j\in D}\sum_{i\in
+F_j} d'(i,j)y_i^*$; by property (d), $\sum_{j\in D}\sum_{i\in F_j}
+d(i,j)y_i^*\le\tilde U'$, and taking expectations with
+Lemma~\ref{lem:random_dist} termwise gives the bound.
+\end{proof}
+
+\begin{algorithm}[h]
+\caption{Colorful iterative rounding} \label{alg:iterative_rounding}
+\begin{algorithmic}
+    \Require $I = (F, R, B, d, k, \rho, \beta, S_0)$, $\sigma, \delta \in (0, 1/2)$, $U \ge 0$, $y^* \in [0,1]^F$, $(F_j)_{j \in D \cup S_0}$, $(\ell_j)_{j \in D \cup S_0}$
+    \Ensure an almost-integral solution $y^*$
+\end{algorithmic}
+\noindent\rule{\linewidth}{0.4pt}
+\begin{algorithmic}[1]
+    \State $D_\text{full} \gets \emptyset$, $D_\text{part} \gets D$, $D^* \gets S_0$
+    \While{true}
+        \State Find an optimum vertex point solution $y^*$ to~\eqref{LP-iter}
+        \If{there exists some $j \in D_\text{part}$ such that $y^*(F_j) = 1$}
+            \State $D_\text{part} \gets D_\text{part} \setminus \{j\}$, $D_\text{full} \gets D_\text{full} \cup \{j\}$
+            \State $B_j \gets \{i \in F_j : d'(i,j) \le \Delta_{\ell_j-1}\}$
+            \State \Call{Update-$D^*$}{$j$}
+        \ElsIf{there exists $j \in D_\text{full}$ such that $y^*(B_j) = 1$}
+            \State $\ell_j \gets \ell_j - 1$, $F_j \gets B_j$, $B_j \gets \{i \in F_j : d'(i,j) \le \Delta_{\ell_j-1}\}$
+            \State \Call{Update-$D^*$}{$j$}
+        \Else
+            \State \textbf{break}
+        \EndIf
+    \EndWhile
+    \State \Return $y^*$
+\end{algorithmic}
+\noindent\rule{\linewidth}{0.4pt}
+\begin{algorithmic}[1]
+    \Function{Update-$D^*$}{$j$}
+        \If{there exists no $j' \in D^*$ with $\ell_{j'} \le \ell_j$ and $F_j \cap F_{j'} \neq \emptyset$}
+            \State Remove from $D^*$ all $j'$ such that $F_j \cap F_{j'} \neq \emptyset$
+            \State $D^* \gets D^* \cup \{j\}$
+        \EndIf
+    \EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{claim}
+\label{claim:invariants}
+After every step of Algorithm~\ref{alg:iterative_rounding}: (1)
+$D_\text{full},D_\text{part}$ partition $D$, and $S_0\subseteq D^*$,
+$D^*\setminus S_0\subseteq D_\text{full}$; (2) the sets $\{F_j : j\in
+D^*\}$ are pairwise disjoint; (3) for $j\in D_\text{full}$, $B_j=\{i\in
+F_j : d'(i,j)\le\Delta_{\ell_j-1}\}$; (4) for every $j\in D$ and $i\in
+F_j$, $d'(i,j)\le\Delta_{\ell_j}$; (5) $\Delta_{\ell_j}\le\tau \mathcal{R}_j$ for
+every $j\in D$; (6) $\ell_j\ge -1$ for every $j\in D$.
+\end{claim}
+
+\begin{proof}
+All six items follow directly by inspection of the algorithm: (1)--(3)
+are immediate from lines 1, 5--6, 9--10, and the definition of
+\textsc{Update-$D^*$}; (4) holds because $F_j$ is only ever shrunk to
+$B_j\subseteq\{i\in F_j : d'(i,j)\le\Delta_{\ell_j-1}\}$ before $\ell_j$
+is decremented, so $F_j\subseteq\mathcal B(j,\Delta_{\ell_j})$ is
+maintained inductively; (5) and (6) follow because $\ell_j$ starts at the
+value with $\Delta_{\ell_j}=\max_{i\in F_j} d'(i,j)\le\tau \mathcal{R}_j$ (since
+$F_j\subseteq\mathcal B(j,\mathcal{R}_j)$ and consecutive levels differ by a factor
+$\tau$) and only decreases while $F_j$ remains nonempty, which happens at
+worst down to level $-1$ where $\Delta_{-1}=0$. None of these six
+properties refers to $\rho$, $\beta$, or a client's color, since they
+only concern the sets $F_j,B_j,D^*$ and the levels $\ell_j$.
+\end{proof}
+
+\section{Almost-integral solutions with two coverage constraints}
+\label{sec:fractional-count}
+
+We now reach the first point where the second coverage constraint
+changes the outcome: a vertex solution of \eqref{LP-iter} can have up to
+\emph{four} fractional variables, instead of two.
+
+\begin{lemma}
+\label{lem:almost_integral}
+If, right after re-solving \eqref{LP-iter}, neither
+\eqref{const:iter_B_full} nor \eqref{const:iter_F_part} is tight for
+$y^*$, then $y^*$ has at most $4$ strictly fractional variables.
+\end{lemma}
+
+\begin{proof}
+Suppose $y^*$ has $n'\ge5$ strictly fractional values. Pick $|F|$
+independent tight constraints of \eqref{LP-iter} that determine the
+vertex $y^*$; we may take, for every integral coordinate $y^*_i\in\{0,1\}$,
+its domain constraint~\eqref{const:iter_domain}, contributing $|F|-n'$
+tight constraints, so we must find $n'$ further independent tight
+constraints among \eqref{const:iter_k}, \eqref{const:iter_rho},
+\eqref{const:iter_beta}, \eqref{const:iter_Dstar}.
+
+Every tight constraint of type \eqref{const:iter_Dstar} involves at
+least two fractional variables (it is $y(F_j)=1$ with $j\in D^*$, and
+$|F_j|\ge1$; if $|F_j\cap\{i:y^*_i\text{ fractional}\}|\le1$ the
+constraint would force that single variable to be an integer, contrary
+to its fractionality), and for distinct $j,j'\in D^*$ the sets $F_j,F_{j'}$
+are disjoint (Claim~\ref{claim:invariants}, item 2), so these tight
+constraints do not share variables. If \eqref{const:iter_k} is tight, it
+contains \emph{all} variables, so — to remain independent of the picked
+\eqref{const:iter_Dstar} constraints — it must contribute at least two
+fractional variables not already accounted for by any of them. The same
+argument applies separately to \eqref{const:iter_rho} with respect to the
+picked \eqref{const:iter_Dstar} constraints (it, too, must contribute at
+least two fresh fractional variables to remain independent of them,
+although it may share those two variables with \eqref{const:iter_k}),
+and likewise for \eqref{const:iter_beta}. Hence at most one of
+\eqref{const:iter_k} and \eqref{const:iter_rho} can be tight together
+with fewer than $2$ variables each beyond what \eqref{const:iter_Dstar}
+already supplies without the count exceeding $n'/2$ for the pair; more
+precisely, the number of tight constraints among \eqref{const:iter_k}
+and \eqref{const:iter_rho} together is at most $n'/2$ (each contributing
+a disjoint-from-$D^*$ pair, and there are at most $n'/2$ disjoint pairs
+among $n'$ fractional variables), so the total number of tight
+constraints among \eqref{const:iter_k}, \eqref{const:iter_rho},
+\eqref{const:iter_beta}, \eqref{const:iter_Dstar} is at most $n'/2+2$.
+This is strictly less than $n'$ once $n'\ge5$, contradicting the
+independence of the $n'$ constraints we needed to find. Hence $n'\le4$.
+\end{proof}
+
+\begin{remark}
+With a single coverage constraint, only \eqref{const:iter_k} can
+contribute an extra pair of fresh fractional variables beyond
+\eqref{const:iter_Dstar}, giving a bound of $n'/2+1$ and hence at most
+$2$ fractional variables. Splitting coverage into two constraints lets
+both \eqref{const:iter_k} and \eqref{const:iter_rho} contribute such a
+pair, which is exactly why the bound becomes $n'/2+2$, i.e.\ at most $4$
+fractional variables. This is the only place in the entire construction
+where having two colors changes a combinatorial count, rather than just
+adding bookkeeping.
+\end{remark}
+
+The following three facts bound how far an open facility can be from a
+fully-connected client; none of them references color, since they only
+compare radius-levels and use the triangle inequality on the metric $d$.
+
+\begin{claim}
+\label{claim:intersect_distance}
+If at some stage of the algorithm $F_j\cap F_{j'}\neq\emptyset$ for
+$j,j'\in D$, then $d(j,j')\le\Delta_{\ell_j}+\Delta_{\ell_{j'}}$.
+\end{claim}
+\begin{proof}
+Let $i\in F_j\cap F_{j'}$. By item 4 of Claim~\ref{claim:invariants},
+$d'(i,j)\le\Delta_{\ell_j}$ and $d'(i,j')\le\Delta_{\ell_{j'}}$; since
+$d\le d'$ (Lemma~\ref{lem:random_dist}), the triangle inequality gives
+$d(j,j')\le d(j,i)+d(i,j')\le\Delta_{\ell_j}+\Delta_{\ell_{j'}}$.
+\end{proof}
+
+\begin{claim}
+\label{claim:Dstar_distance}
+If $j$ is added to $D^*$ while at radius-level $\ell\ge-1$, then the
+final solution $y^*$ has at least $1$ unit of open facility within
+distance $\frac{\tau+1}{\tau-1}\Delta_\ell$ of $j$.
+\end{claim}
+\begin{proof}
+By induction on radius-levels. Clients added at level $-1$ never leave
+$D^*$ (their $\ell_j=-1$ can never decrease), so
+\eqref{const:iter_Dstar} guarantees a full unit of open facility at
+distance $0\le\frac{\tau+1}{\tau-1}\Delta_{-1}$. Suppose the claim holds
+up to level $\ell-1$ and $j$ is added at level $\ell$. If $j$ stays in
+$D^*$ until the end, \eqref{const:iter_Dstar} again gives the claim
+directly, since the final $\Delta_{\ell_j}\le\Delta_\ell$. Otherwise some
+$j'$ later evicts $j$ from $D^*$, with radius-level $\ell_{j'}<\ell_j\le
+\ell$ at that time and $F_j\cap F_{j'}\ne\emptyset$; by the induction
+hypothesis, the final $y^*$ has a unit of open facility within
+$\frac{\tau+1}{\tau-1}\Delta_{\ell_{j'}} \le
+\frac{\tau+1}{\tau-1}\frac{\Delta_\ell}{\tau}$ of $j'$, and by
+Claim~\ref{claim:intersect_distance}, $d(j,j')\le\Delta_\ell+
+\Delta_\ell/\tau$. By the triangle inequality, that same unit of
+facility is within
+\[
+d(i,j) \le d(i,j')+d(j',j) \le \frac{\tau+1}{\tau-1}\frac{\Delta_\ell}{\tau}
++ \Delta_\ell + \frac{\Delta_\ell}{\tau} = \frac{\tau+1}{\tau-1}\Delta_\ell
+\]
+of $j$, completing the induction.
+\end{proof}
+
+\begin{lemma}
+\label{lem:full_client_distance}
+At termination, every $j\in D_\text{full}$ has at least $1$ unit of open
+facility within distance $\frac{3\tau-1}{\tau-1}\Delta_{\ell_j}$: $\sum_{i
+\in F: d(i,j)\le \frac{3\tau-1}{\tau-1}\Delta_{\ell_j}} y^*_i\ge1$.
+\end{lemma}
+\begin{proof}
+Consider the last invocation of \textsc{Update-$D^*$}$(j)$, with $\ell_j$
+its radius-level at that time (unchanged since). If $j$ was added to
+$D^*$, Claim~\ref{claim:Dstar_distance} gives the claim directly. If not,
+some $j'\in D^*$ existed with $F_{j'}\cap F_j\ne\emptyset$ and
+$\ell_{j'}\le\ell_j$; by Claim~\ref{claim:intersect_distance},
+$d(j,j')\le2\Delta_{\ell_j}$, and by Claim~\ref{claim:Dstar_distance},
+$y^*$ has a unit of facility within $\frac{\tau+1}{\tau-1}\Delta_{\ell_{j'}}
+\le\frac{\tau+1}{\tau-1}\Delta_{\ell_j}$ of $j'$. The triangle inequality
+gives a bound of $2\Delta_{\ell_j}+\frac{\tau+1}{\tau-1}\Delta_{\ell_j}=
+\frac{3\tau-1}{\tau-1}\Delta_{\ell_j}$ from $j$.
+\end{proof}
+
+\begin{theorem}
+\label{thm:solution_iter}
+Algorithm~\ref{alg:iterative_rounding} terminates with $y^*\in[0,1]^F$
+that extends to a solution $(x,y^*)$ of \eqref{LP-basic} with at most $4$
+fractional $y^*$-values, $y^*_i=1$ for $i\in S_0$, and expected objective
+value at most $\alpha\tilde U'$, where $\alpha=\frac{3\tau-1}{\ln\tau}
+\approx7.081$.
+\end{theorem}
+
+\begin{proof}
+When the loop stops, neither \eqref{const:iter_B_full} nor
+\eqref{const:iter_F_part} is tight, so by Lemma~\ref{lem:almost_integral}
+$y^*$ has at most $4$ fractional entries; every virtual client $i\in S_0$
+remains permanently in $D^*$ (item 1 of Claim~\ref{claim:invariants}), so
+$y^*_i=y^*(F_i)=1$.
+
+Build a fractional assignment: for $j\in D_\text{part}$, set
+$x_{ij}=y^*_i$ for $i\in F_j$; for $j\in D_\text{full}$, set $x_{ij}=y^*_i$
+for $i\in B_j$, and distribute the remaining $1-y^*(B_j)$ arbitrarily
+among the open facility guaranteed by Lemma~\ref{lem:full_client_distance}
+within $\frac{3\tau-1}{\tau-1}\Delta_{\ell_j}$ of $j$. This satisfies
+$\sum_i y^*_i\le k$ and $x_{ij}\le y^*_i$ trivially. For coverage: a
+partial client $j$ of color red/blue contributes $y^*(F_j)$ to
+\eqref{const:iter_rho}/\eqref{const:iter_beta}, and a full client
+contributes exactly $1$; hence the total number of red clients served,
+$|D_\text{full}\cap R|+\sum_{j\in D_\text{part}\cap R} y^*(F_j)$, is at
+least $\rho$ by \eqref{const:iter_rho}, and symmetrically the number of
+blue clients served is at least $\beta$ by \eqref{const:iter_beta}. So
+$(x,y^*)$ is feasible for \eqref{LP-basic}.
+
+For the cost: throughout the algorithm, moving a client to
+$D_\text{full}$ or decreasing its radius-level never increases its
+contribution to the objective of \eqref{LP-iter} (both updates only
+shrink $F_j$/$B_j$ or lower $\ell_j$, which can only lower the discretized
+connection costs or the bound $\Delta_{\ell_j}$ appearing in the
+objective), so the final \eqref{LP-iter}-objective of $y^*$ is at most
+its initial value, which by Lemma~\ref{lem:iter_lp_feasible} is
+$\frac{\tau-1}{\ln\tau}\tilde U'$ in expectation. For a partial client
+$j$, its \eqref{LP-basic} cost $\sum_{i\in F_j}d(i,j)x_{ij}$ matches its
+\eqref{LP-iter} contribution (using $d\le d'$ termwise, so the true cost
+is at most the discretized one, matching what was bounded). For a full
+client $j$, the connections inside $B_j$ likewise match, while the
+remaining $1-y^*(B_j)$ fraction costs at most
+$\frac{3\tau-1}{\tau-1}\Delta_{\ell_j}$ by
+Lemma~\ref{lem:full_client_distance}, against a contribution of exactly
+$(1-y^*(B_j))\Delta_{\ell_j}$ in \eqref{LP-iter}; so the true cost of $j$
+is at most $\frac{3\tau-1}{\tau-1}$ times its \eqref{LP-iter}
+contribution. Combining this factor with the expected discretization
+factor $\frac{\tau-1}{\ln\tau}$ of Lemma~\ref{lem:random_dist}, the
+expected total cost is at most
+\[
+\frac{3\tau-1}{\tau-1}\cdot\frac{\tau-1}{\ln\tau}\tilde U' =
+\frac{3\tau-1}{\ln\tau}\tilde U' = \alpha\tilde U'. \qedhere
+\]
+\end{proof}
+
+\section{Opening at most $k+1$ facilities}
+\label{sec:opening}
+
+This is the second, and last, point where the two coverage constraints
+force new arguments rather than bookkeeping. In the single-coverage-number
+algorithm, a vertex with exactly two fractional facilities can always be
+rounded by opening the one that covers more clients, landing on exactly
+$k$ open facilities. With two coverage constraints, Lemma
+\ref{lem:almost_integral} allows up to four fractional facilities, and
+the facility that is best for red need not be best for blue — so the
+choice of what to close needs its own argument.
+
+Assume $y(F)=k$ for the returned solution $y$ of
+Algorithm~\ref{alg:iterative_rounding} (otherwise more facilities can be
+opened at no extra cost). Revisiting the proof of
+Lemma~\ref{lem:almost_integral} with $n'=4$: both
+\eqref{const:iter_k} and \eqref{const:iter_rho} (or, symmetrically,
+\eqref{const:iter_beta}) must then be among the picked tight constraints,
+each contributing exactly $2$ fresh fractional variables independent of
+the picked \eqref{const:iter_Dstar} constraints — otherwise the total
+count of tight constraints would fall short of $n'=4$. This forces the
+four fractional values to split into two disjoint pairs, each summing to
+$1$. Hence the strictly fractional values of $y$ appear in exactly one of
+the following formats:
+\begin{enumerate}
+\item two fractional variables summing to $1$;
+\item three fractional variables summing to $2$;
+\item three fractional variables summing to $1$; \label{format3}
+\item four fractional variables, in two disjoint pairs each summing to
+$1$. \label{format4}
+\end{enumerate}
+In formats 1 and 2, opening \emph{every} fractional facility adds exactly
+one facility to the solution, giving $k+1$ open facilities without any
+effect on coverage. In formats \ref{format3} and \ref{format4}, opening
+everything would give $k+2$; instead, exactly one fractional facility
+must be closed, and the two lemmas below show it can always be chosen so
+both coverage requirements still hold.
+
+\begin{lemma}
+\label{lem:format3}
+In format~\ref{format3}, we can find an integral solution opening at
+most $k+1$ facilities that still covers at least $\rho$ red and $\beta$
+blue clients.
+\end{lemma}
+\begin{proof}
+Let $i_1,i_2,i_3$ be the fractional facilities, $y_{i_1}+y_{i_2}+y_{i_3}
+=1$. For $X\subseteq\{i_1,i_2,i_3\}$ let $R_X = \{j\in D_\text{part}\cap
+R : F_j=X\}$ and $B_X = \{j\in D_\text{part}\cap B : F_j=X\}$. Since
+\eqref{const:iter_F_part} is not tight, $j\in D_\text{part}$ cannot have
+$F_j=\{i_1,i_2,i_3\}$ (that would force $y(F_j)=1$), so
+$R_{\{i_1,i_2,i_3\}}=B_{\{i_1,i_2,i_3\}}=\emptyset$. A client is served
+after rounding iff at least one facility of its $F_j$ is open. Open the
+facility $i$ maximizing $|R_{\{i\}}|$ and the facility $i'$ maximizing
+$|B_{\{i'\}}|$ (possibly $i=i'$), and close the third one; after possibly
+relabeling, say the closed facility is $i_3$, so $\max\{|R_{\{i_1\}}|,
+|R_{\{i_2\}}|\}\ge|R_{\{i_3\}}|$ and $\max\{|B_{\{i_1\}}|,|B_{\{i_2\}}|\}
+\ge|B_{\{i_3\}}|$.
+
+The number of red clients served after rounding is
+\begin{align*}
+|D_\text{full} & \cap R| + |R_{\{i_1,i_2\}}| + |R_{\{i_1,i_3\}}| + |R_{\{i_2,i_3\}}| + |R_{\{i_1\}}| + |R_{\{i_2\}}|\\
+> \ & |D_\text{full} \cap R| + |R_{\{i_1,i_2\}}| + |R_{\{i_1,i_3\}}| + |R_{\{i_2,i_3\}}| + y_{i_1} |R_{\{i_1\}}| + y_{i_3} |R_{\{i_1\}}| + y_{i_2}|R_{\{i_2\}}| + y_{i_3} |R_{\{i_2\}}| \\
+\ge \ & |D_\text{full} \cap R| + |R_{\{i_1,i_2\}}| + |R_{\{i_1,i_3\}}| + |R_{\{i_2,i_3\}}| + y_{i_1} |R_{\{i_1\}}| + y_{i_2}|R_{\{i_2\}}| + y_{i_3} \max \{|R_{\{i_1\}}|,|R_{\{i_2\}}|\} \\
+\ge \ & |D_\text{full} \cap R| + |R_{\{i_1,i_2\}}| + |R_{\{i_1,i_3\}}| + |R_{\{i_2,i_3\}}| + y_{i_1} |R_{\{i_1\}}| + y_{i_2}|R_{\{i_2\}}| + y_{i_3} |R_{\{i_3\}}| \ge \rho,
+\end{align*}
+where the last inequality is exactly the left side of
+\eqref{const:iter_rho}. The identical computation with $B$ in place of
+$R$, using $\max\{|B_{\{i_1\}}|,|B_{\{i_2\}}|\}\ge|B_{\{i_3\}}|$ and
+\eqref{const:iter_beta}, shows the number of blue clients served is at
+least $\beta$.
+\end{proof}
+
+\begin{lemma}
+\label{lem:format4}
+In format~\ref{format4}, we can find an integral solution opening at
+most $k+1$ facilities that still covers at least $\rho$ red and $\beta$
+blue clients.
+\end{lemma}
+\begin{proof}
+Let $i_1,i_2,i_3,i_4$ be the fractional facilities with $y_{i_1}+y_{i_2}
+=1=y_{i_3}+y_{i_4}$; relabel so that $y_{i_1}=\max\{y_{i_1},y_{i_2},
+y_{i_3},y_{i_4}\}$, hence $y_{i_2}=\min\{\cdots\}$. Never close $i_1$; the
+facility to close will come from $\{i_2,i_3,i_4\}$. For $X\subseteq
+\{i_1,i_2,i_3,i_4\}$ let $R_X,B_X$ be as before. Since
+\eqref{const:iter_F_part} is not tight, $R_X=B_X=\emptyset$ whenever
+$|X|\ge3$; moreover $X\in\{\{i_1,i_2\},\{i_1,i_3\},\{i_1,i_4\},
+\{i_3,i_4\}\}$ also gives $R_X=B_X=\emptyset$, since a client $j$ with
+$F_j$ equal to one of these pairs would have $y(F_j)=1$ (each such pair
+sums to $1$), again contradicting that \eqref{const:iter_F_part} is not
+tight.
+
+From $\{i_2,i_3,i_4\}$, open the facility $i$ maximizing $|R_{\{i\}}|$
+and $i'$ maximizing $|B_{\{i'\}}|$, and close a remaining one. We show
+the red requirement holds; the blue case is symmetric.
+
+\emph{Case $i=i_2$}, i.e.\ $|R_{\{i_2\}}|\ge\max\{|R_{\{i_3\}}|,
+|R_{\{i_4\}}|\}$; suppose the closed facility is $i_3$, i.e.\
+$\max\{|B_{\{i_2\}}|,|B_{\{i_4\}}|\}\ge|B_{\{i_3\}}|$. The red clients
+served after rounding are
+\begin{align*}
+|D_\text{full} & \cap R| + |R_{\{i_1\}}| + |R_{\{i_4\}}| + |R_{\{i_2,i_3\}}| + |R_{\{i_2,i_4\}}| + |R_{\{i_2\}}| \\
+&=|D_\text{full} \cap R| + |R_{\{i_1\}}| + |R_{\{i_4\}}| + |R_{\{i_2,i_3\}}| + |R_{\{i_2,i_4\}}| + (y_{i_2} + y_{i_1}) |R_{\{i_2\}}| \\
+&=|D_\text{full} \cap R| + |R_{\{i_1\}}| + |R_{\{i_4\}}| + |R_{\{i_2,i_3\}}| + |R_{\{i_2,i_4\}}| + y_{i_2}|R_{\{i_2\}}| + y_{i_1} |R_{\{i_2\}}|\\
+&\geq|D_\text{full} \cap R| + |R_{\{i_1\}}| + |R_{\{i_4\}}| + |R_{\{i_2,i_3\}}| + |R_{\{i_2,i_4\}}| + y_{i_2}|R_{\{i_2\}}| + y_{i_3} |R_{\{i_3\}}| \geq \rho,
+\end{align*}
+where the inequality uses $y_{i_1}\ge y_{i_3}$ (since $y_{i_1}$ is the
+maximum) together with $|R_{\{i_2\}}|\ge|R_{\{i_3\}}|$, and the last step
+is exactly \eqref{const:iter_rho}.
+
+\emph{Case $i\ne i_2$}, say $i=i_3$, i.e.\ $|R_{\{i_3\}}|\ge\max\{
+|R_{\{i_2\}}|,|R_{\{i_4\}}|\}$; suppose the closed facility is $i_2$. The
+red clients served after rounding are
+\begin{align*}
+|D_\text{full} & \cap R| + |R_{\{i_1\}}| + |R_{\{i_4\}}| + |R_{\{i_2,i_3\}}| + |R_{\{i_2,i_4\}}| + |R_{\{i_3\}}| \\
+&=|D_\text{full} \cap R| + |R_{\{i_1\}}| + |R_{\{i_4\}}| + |R_{\{i_2,i_3\}}| + |R_{\{i_2,i_4\}}| + (y_{i_3} + y_{i_4}) |R_{\{i_3\}}| \\
+&=|D_\text{full} \cap R| + |R_{\{i_1\}}| + |R_{\{i_4\}}| + |R_{\{i_2,i_3\}}| + |R_{\{i_2,i_4\}}| + y_{i_3}|R_{\{i_3\}}| + y_{i_4} |R_{\{i_3\}}|\\
+&\geq|D_\text{full} \cap R| + |R_{\{i_1\}}| + |R_{\{i_4\}}| + |R_{\{i_2,i_3\}}| + |R_{\{i_2,i_4\}}| + y_{i_3}|R_{\{i_3\}}| + y_{i_2} |R_{\{i_2\}}| \geq \rho,
+\end{align*}
+using $|R_{\{i_3\}}|\ge|R_{\{i_2\}}|$ and $y_{i_4}\ge y_{i_2}$ (the
+latter by the choice of $i_1$ as the maximum, which forces $i_2$ to be
+the minimum). If the closed facility is $i_4$ instead of $i_2$, the same
+computation goes through after exchanging the roles of $i_2$ and $i_4$.
+The blue requirement is obtained by the identical argument with $B$ in
+place of $R$ throughout.
+\end{proof}
+
+\begin{theorem}
+\label{thm:colorful_main}
+Let $y^*$ be an optimum vertex solution of \eqref{LP-iter} such that
+neither \eqref{const:iter_F_part} nor \eqref{const:iter_B_full} is tight
+for $y^*$. Then we can efficiently find an integral solution $y$ opening
+at most $k+1$ facilities and covering at least $\rho$ red clients and
+$\beta$ blue clients.
+\end{theorem}
+\begin{proof}
+Immediate from Lemmas~\ref{lem:format3} and~\ref{lem:format4} together
+with the trivial rounding of formats 1 and 2 described above.
+\end{proof}
+
+\begin{remark}
+The point of Lemmas~\ref{lem:format3} and~\ref{lem:format4} is that the
+facility to close is chosen by \emph{maximizing coverage separately for
+each color} rather than arbitrarily; this is exactly what lets the
+argument always land on $k+1$ open facilities despite the extra color
+constraint, matching (up to the additive $+1$) what the single-coverage-
+number algorithm achieves.
+\end{remark}
+
+\section{Remaining work}
+\label{sec:status}
+
+This note establishes Theorem~\ref{thm:colorful_main}: an almost-integral
+solution can always be rounded to at most $k+1$ open facilities without
+violating either coverage requirement. Two steps remain before this
+becomes a full pseudo-approximation guarantee for colorful $k$-median:
+
+\begin{enumerate}
+\item \textbf{Bounding the extra connection cost of closing a fractional
+facility.} Theorem~\ref{thm:colorful_main} bounds the number of open
+facilities and guarantees coverage, but not yet the additional connection
+cost incurred by closing one fractional facility instead of opening all
+of them — in formats~\ref{format3} and~\ref{format4} there are two or
+three facilities competing for the role of ``the one that stays open'',
+rather than a single pair as in the one-color case, so the star-cost
+argument used there needs to be redone for up to three candidates at
+once. This has not yet been verified in detail.
+\item \textbf{Combining the pieces into a single guarantee.} Once that
+cost bound is available, the remaining step is to guess $U$ by binary
+search, choose $\sigma=\Theta(\eps^{?})$ and $\delta=\Theta(\eps)$, run
+Theorem~\ref{thm:sparsification} over all guessed instances, run the
+whole pipeline on each, and reconnect the $\rho-\rho'$ missing red
+clients and $\beta-\beta'$ missing blue clients to $S_0$. The expected
+final guarantee is a \emph{pseudo}-approximation: cost at most
+$\alpha(1+\eps)U$, at most $k+1$ open facilities, and \emph{no} coverage
+violation (at least $\rho$ red and $\beta$ blue clients always covered).
+\end{enumerate}
+
+\begin{thebibliography}{9}
+\bibitem{KLS2018}
+Ravishankar Krishnaswamy, Shi Li, and Sai Sandeep.
+\emph{Constant approximation for $k$-median and $k$-means with outliers
+via iterative rounding.}
+In \emph{Proceedings of the 50th Annual ACM SIGACT Symposium on Theory of
+Computing (STOC)}, pages 646--659. ACM, New York, 2018.
+\url{https://doi.org/10.1145/3188745.3188882}
+\end{thebibliography}
+
+\end{document}
